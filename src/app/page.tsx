@@ -22,9 +22,14 @@ import {
   Eye,
   MousePointerClick,
   Zap,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 
-interface NetworkRowData {
+interface DynamicChannel {
+  id: string;
+  name: string;
+  color: string;
   followers_total: number;
   organic_growth_net: number;
   organic_reach: number;
@@ -36,6 +41,7 @@ interface NetworkRowData {
 }
 
 interface CeoDirective {
+  id: string;
   area: string;
   status: 'ESCALAR' | 'CORREGIR' | 'MANTENER';
   decision: string;
@@ -47,11 +53,7 @@ interface CeoVisualReport {
   period_label: string;
   executive_headline: string;
   show_financials: boolean;
-  tiktok: NetworkRowData;
-  instagram: NetworkRowData;
-  facebook: NetworkRowData;
-  linkedin: NetworkRowData;
-  youtube: NetworkRowData;
+  channels: DynamicChannel[];
   uk_share_fb: number;
   spain_share_fb: number;
   spain_share_ig: number;
@@ -62,7 +64,19 @@ interface CeoVisualReport {
 const SIAM_LOGO_URL =
   'https://siampark.net/templates/yootheme/cache/d1/siam-park-tenerife-main-logo-d1ab9a93.webp';
 
-const STORAGE_KEY = 'siampark_ceo_visual_matrix_v4';
+const STORAGE_KEY = 'siampark_ceo_dynamic_channels_v5';
+
+const PRESET_COLORS = [
+  '#0f172a',
+  '#e1306c',
+  '#1877f2',
+  '#0a66c2',
+  '#dc2626',
+  '#16a34a',
+  '#d97706',
+  '#7c3aed',
+  '#0891b2',
+];
 
 const OCTOBER_2026_DATA: CeoVisualReport = {
   report_month: '2026-10',
@@ -70,62 +84,80 @@ const OCTOBER_2026_DATA: CeoVisualReport = {
   executive_headline:
     'Comunidad total de 604.220 seguidores liderada por Facebook (352K) e Instagram (218K), con TikTok como motor de crecimiento (+1.250 netos). Las visitas VIP (Amaia Romero y Charly Flow) multiplicaron x8 el alcance orgánico sin coste adicional.',
   show_financials: false,
-  tiktok: {
-    followers_total: 20350,
-    organic_growth_net: 1250,
-    organic_reach: 163620,
-    paid_reach_clicks: 18400,
-    ad_spend: 0,
-    web_visits: 640,
-    conversions: 0,
-    revenue: 0,
-  },
-  instagram: {
-    followers_total: 218770,
-    organic_growth_net: 441,
-    organic_reach: 1690000,
-    paid_reach_clicks: 24500,
-    ad_spend: 0,
-    web_visits: 1120,
-    conversions: 0,
-    revenue: 0,
-  },
-  facebook: {
-    followers_total: 352290,
-    organic_growth_net: 424,
-    organic_reach: 736800,
-    paid_reach_clicks: 15200,
-    ad_spend: 0,
-    web_visits: 2453,
-    conversions: 0,
-    revenue: 0,
-  },
-  linkedin: {
-    followers_total: 3200,
-    organic_growth_net: 85,
-    organic_reach: 14200,
-    paid_reach_clicks: 0,
-    ad_spend: 0,
-    web_visits: 190,
-    conversions: 0,
-    revenue: 0,
-  },
-  youtube: {
-    followers_total: 9610,
-    organic_growth_net: 48,
-    organic_reach: 46850,
-    paid_reach_clicks: 81500,
-    ad_spend: 0,
-    web_visits: 520,
-    conversions: 0,
-    revenue: 0,
-  },
+  channels: [
+    {
+      id: 'tiktok',
+      name: 'TikTok',
+      color: '#0f172a',
+      followers_total: 20350,
+      organic_growth_net: 1250,
+      organic_reach: 163620,
+      paid_reach_clicks: 18400,
+      ad_spend: 0,
+      web_visits: 640,
+      conversions: 0,
+      revenue: 0,
+    },
+    {
+      id: 'instagram',
+      name: 'Instagram',
+      color: '#e1306c',
+      followers_total: 218770,
+      organic_growth_net: 441,
+      organic_reach: 1690000,
+      paid_reach_clicks: 24500,
+      ad_spend: 0,
+      web_visits: 1120,
+      conversions: 0,
+      revenue: 0,
+    },
+    {
+      id: 'facebook',
+      name: 'Facebook',
+      color: '#1877f2',
+      followers_total: 352290,
+      organic_growth_net: 424,
+      organic_reach: 736800,
+      paid_reach_clicks: 15200,
+      ad_spend: 0,
+      web_visits: 2453,
+      conversions: 0,
+      revenue: 0,
+    },
+    {
+      id: 'linkedin',
+      name: 'LinkedIn',
+      color: '#0a66c2',
+      followers_total: 3200,
+      organic_growth_net: 85,
+      organic_reach: 14200,
+      paid_reach_clicks: 0,
+      ad_spend: 0,
+      web_visits: 190,
+      conversions: 0,
+      revenue: 0,
+    },
+    {
+      id: 'youtube',
+      name: 'YouTube',
+      color: '#dc2626',
+      followers_total: 9610,
+      organic_growth_net: 48,
+      organic_reach: 46850,
+      paid_reach_clicks: 81500,
+      ad_spend: 0,
+      web_visits: 520,
+      conversions: 0,
+      revenue: 0,
+    },
+  ],
   uk_share_fb: 30.8,
   spain_share_fb: 27.52,
   spain_share_ig: 44.58,
   uk_share_ig: 19.48,
   directives: [
     {
+      id: 'dir-1',
       area: '1. Alianzas Talento VIP',
       status: 'ESCALAR',
       decision:
@@ -133,6 +165,7 @@ const OCTOBER_2026_DATA: CeoVisualReport = {
       expected_impact: '+250K impactos orgánicos/mes sin pauta.',
     },
     {
+      id: 'dir-2',
       area: '2. Mercado Británico Invierno',
       status: 'ESCALAR',
       decision:
@@ -140,6 +173,7 @@ const OCTOBER_2026_DATA: CeoVisualReport = {
       expected_impact: 'Aumento de reservas internacionales.',
     },
     {
+      id: 'dir-3',
       area: '3. Enlaces Directos a Taquilla',
       status: 'CORREGIR',
       decision:
@@ -149,13 +183,14 @@ const OCTOBER_2026_DATA: CeoVisualReport = {
   ],
 };
 
-const createEmptyMonth = (month: string): CeoVisualReport => ({
+const createEmptyMonth = (month: string, templateChannels?: DynamicChannel[]): CeoVisualReport => ({
   ...OCTOBER_2026_DATA,
   report_month: month,
   period_label: `Cierre Mensual · ${month}`,
   executive_headline:
-    'Introduce los datos mensuales de cada red social para generar automáticamente el diagnóstico ejecutivo.',
-  tiktok: {
+    'Introduce los datos mensuales de cada canal o medio para generar automáticamente el diagnóstico ejecutivo.',
+  channels: (templateChannels || OCTOBER_2026_DATA.channels).map((ch) => ({
+    ...ch,
     followers_total: 0,
     organic_growth_net: 0,
     organic_reach: 0,
@@ -164,47 +199,7 @@ const createEmptyMonth = (month: string): CeoVisualReport => ({
     web_visits: 0,
     conversions: 0,
     revenue: 0,
-  },
-  instagram: {
-    followers_total: 0,
-    organic_growth_net: 0,
-    organic_reach: 0,
-    paid_reach_clicks: 0,
-    ad_spend: 0,
-    web_visits: 0,
-    conversions: 0,
-    revenue: 0,
-  },
-  facebook: {
-    followers_total: 0,
-    organic_growth_net: 0,
-    organic_reach: 0,
-    paid_reach_clicks: 0,
-    ad_spend: 0,
-    web_visits: 0,
-    conversions: 0,
-    revenue: 0,
-  },
-  linkedin: {
-    followers_total: 0,
-    organic_growth_net: 0,
-    organic_reach: 0,
-    paid_reach_clicks: 0,
-    ad_spend: 0,
-    web_visits: 0,
-    conversions: 0,
-    revenue: 0,
-  },
-  youtube: {
-    followers_total: 0,
-    organic_growth_net: 0,
-    organic_reach: 0,
-    paid_reach_clicks: 0,
-    ad_spend: 0,
-    web_visits: 0,
-    conversions: 0,
-    revenue: 0,
-  },
+  })),
 });
 
 const DATA_SOURCES_GUIDE = [
@@ -230,18 +225,18 @@ const DATA_SOURCES_GUIDE = [
     web: 'Meta Business Suite → Clics en enlaces externos + GA4 (utm_source=facebook)',
   },
   {
-    network: 'LinkedIn',
-    color: '#0a66c2',
-    organic: 'Página Empresa LinkedIn → Análisis → Seguidores y Actualizaciones',
-    paid: 'LinkedIn Campaign Manager → Rendimiento (Impresiones y Gasto total)',
-    web: 'LinkedIn Análisis → Clics en botón personalizado + GA4 (utm_source=linkedin)',
+    network: 'Google / SEO / Email',
+    color: '#16a34a',
+    organic: 'Google Search Console (Impresiones/Clics) o Mailchimp/Brevo (Suscriptores/Aperturas)',
+    paid: 'Google Ads → Campañas Search / PMax (Impresiones, Clics y Coste)',
+    web: 'Google Analytics 4 → Adquisición de tráfico (Sesiones por fuente/medio)',
   },
   {
-    network: 'YouTube',
+    network: 'YouTube / LinkedIn',
     color: '#dc2626',
-    organic: 'YouTube Studio → Estadísticas → Audiencia (Suscriptores ganados + Views)',
-    paid: 'Google Ads → Campañas de Vídeo / Demand Gen (Views/Clics y Coste)',
-    web: 'YouTube Studio → Clics en tarjetas/descripción + Google Ads',
+    organic: 'YouTube Studio / LinkedIn Análisis → Seguidores ganados y Visualizaciones',
+    paid: 'Google Ads (Vídeo) / LinkedIn Campaign Manager (Impresiones y Gasto)',
+    web: 'YouTube Tarjetas / LinkedIn Botón personalizado + GA4',
   },
 ];
 
@@ -292,7 +287,7 @@ export default function CeoVisualReportPage() {
         ? reportsMap[m]
         : m === '2026-10'
           ? OCTOBER_2026_DATA
-          : createEmptyMonth(m)
+          : createEmptyMonth(m, draft.channels)
     );
   };
 
@@ -342,39 +337,106 @@ export default function CeoVisualReportPage() {
     reader.readAsText(file);
   };
 
-  const summary = useMemo(() => {
-    const networks = [
-      { id: 'tiktok', name: 'TikTok', color: '#0f172a', data: draft.tiktok },
-      { id: 'instagram', name: 'Instagram', color: '#e1306c', data: draft.instagram },
-      { id: 'facebook', name: 'Facebook', color: '#1877f2', data: draft.facebook },
-      { id: 'linkedin', name: 'LinkedIn', color: '#0a66c2', data: draft.linkedin },
-      { id: 'youtube', name: 'YouTube', color: '#dc2626', data: draft.youtube },
-    ] as const;
+  // Funciones dinámicas para añadir, editar y eliminar canales/medios
+  const handleAddChannel = () => {
+    const nextIndex = draft.channels.length;
+    const nextColor = PRESET_COLORS[nextIndex % PRESET_COLORS.length];
+    const newChannel: DynamicChannel = {
+      id: `canal-${Date.now()}`,
+      name: 'Nuevo Canal / Medio',
+      color: nextColor,
+      followers_total: 0,
+      organic_growth_net: 0,
+      organic_reach: 0,
+      paid_reach_clicks: 0,
+      ad_spend: 0,
+      web_visits: 0,
+      conversions: 0,
+      revenue: 0,
+    };
+    setDraft((prev) => ({
+      ...prev,
+      channels: [...prev.channels, newChannel],
+    }));
+  };
 
-    const totalFollowers = networks.reduce((s, n) => s + Number(n.data.followers_total || 0), 0);
-    const totalOrganicGrowth = networks.reduce(
-      (s, n) => s + Number(n.data.organic_growth_net || 0),
-      0
-    );
-    const totalOrganicReach = networks.reduce(
-      (s, n) => s + Number(n.data.organic_reach || 0),
-      0
-    );
-    const totalPaid = networks.reduce((s, n) => s + Number(n.data.paid_reach_clicks || 0), 0);
-    const totalAdSpend = networks.reduce((s, n) => s + Number(n.data.ad_spend || 0), 0);
-    const totalWebVisits = networks.reduce((s, n) => s + Number(n.data.web_visits || 0), 0);
-    const totalConversions = networks.reduce((s, n) => s + Number(n.data.conversions || 0), 0);
-    const totalRevenue = networks.reduce((s, n) => s + Number(n.data.revenue || 0), 0);
+  const handleRemoveChannel = (id: string) => {
+    if (draft.channels.length <= 1) return;
+    setDraft((prev) => ({
+      ...prev,
+      channels: prev.channels.filter((c) => c.id !== id),
+    }));
+  };
+
+  const updateChannelField = <K extends keyof DynamicChannel>(
+    id: string,
+    field: K,
+    value: DynamicChannel[K]
+  ) => {
+    setDraft((prev) => ({
+      ...prev,
+      channels: prev.channels.map((ch) => (ch.id === id ? { ...ch, [field]: value } : ch)),
+    }));
+  };
+
+  // Funciones dinámicas para directivas
+  const handleAddDirective = () => {
+    const num = draft.directives.length + 1;
+    setDraft((prev) => ({
+      ...prev,
+      directives: [
+        ...prev.directives,
+        {
+          id: `dir-${Date.now()}`,
+          area: `${num}. Nueva Directiva`,
+          status: 'ESCALAR',
+          decision: 'Describe la acción ejecutiva recomendada para el próximo mes.',
+          expected_impact: 'Resultado esperado.',
+        },
+      ],
+    }));
+  };
+
+  const handleRemoveDirective = (id: string) => {
+    if (draft.directives.length <= 1) return;
+    setDraft((prev) => ({
+      ...prev,
+      directives: prev.directives.filter((d) => d.id !== id),
+    }));
+  };
+
+  const updateDirective = (id: string, field: keyof CeoDirective, val: string) => {
+    setDraft((prev) => ({
+      ...prev,
+      directives: prev.directives.map((d) =>
+        d.id === id ? ({ ...d, [field]: val } as CeoDirective) : d
+      ),
+    }));
+  };
+
+  const summary = useMemo(() => {
+    const list = draft.channels;
+    const totalFollowers = list.reduce((s, n) => s + Number(n.followers_total || 0), 0);
+    const totalOrganicGrowth = list.reduce((s, n) => s + Number(n.organic_growth_net || 0), 0);
+    const totalOrganicReach = list.reduce((s, n) => s + Number(n.organic_reach || 0), 0);
+    const totalPaid = list.reduce((s, n) => s + Number(n.paid_reach_clicks || 0), 0);
+    const totalAdSpend = list.reduce((s, n) => s + Number(n.ad_spend || 0), 0);
+    const totalWebVisits = list.reduce((s, n) => s + Number(n.web_visits || 0), 0);
+    const totalConversions = list.reduce((s, n) => s + Number(n.conversions || 0), 0);
+    const totalRevenue = list.reduce((s, n) => s + Number(n.revenue || 0), 0);
 
     const maxCombinedImpact = Math.max(
-      ...networks.map((n) => n.data.organic_reach + n.data.paid_reach_clicks),
+      ...list.map((n) => Number(n.organic_reach || 0) + Number(n.paid_reach_clicks || 0)),
       1
     );
-    const maxWebVisits = Math.max(...networks.map((n) => n.data.web_visits), 1);
+    const maxWebVisits = Math.max(...list.map((n) => Number(n.web_visits || 0)), 1);
 
     let startPct = 0;
-    const donut = networks.map((n) => {
-      const pct = totalFollowers > 0 ? (n.data.followers_total / totalFollowers) * 100 : 20;
+    const donut = list.map((n) => {
+      const pct =
+        totalFollowers > 0
+          ? (Number(n.followers_total || 0) / totalFollowers) * 100
+          : 100 / Math.max(list.length, 1);
       const item = { ...n, pct, start: startPct };
       startPct += pct;
       return item;
@@ -383,7 +445,7 @@ export default function CeoVisualReportPage() {
     const roas = totalAdSpend > 0 ? totalRevenue / totalAdSpend : 0;
 
     return {
-      networks,
+      channels: list,
       totalFollowers,
       totalOrganicGrowth,
       totalOrganicReach,
@@ -397,26 +459,7 @@ export default function CeoVisualReportPage() {
       donut,
       roas,
     };
-  }, [draft]);
-
-  const updateRow = (
-    net: 'tiktok' | 'instagram' | 'facebook' | 'linkedin' | 'youtube',
-    field: keyof NetworkRowData,
-    val: number
-  ) => {
-    setDraft((prev) => ({
-      ...prev,
-      [net]: { ...prev[net], [field]: val },
-    }));
-  };
-
-  const updateDirective = (idx: number, field: keyof CeoDirective, val: string) => {
-    setDraft((prev) => {
-      const list = [...prev.directives];
-      list[idx] = { ...list[idx], [field]: val } as CeoDirective;
-      return { ...prev, directives: list };
-    });
-  };
+  }, [draft.channels]);
 
   return (
     <div className="min-h-screen bg-[#e8ecf1] text-[#111827] p-3 sm:p-6">
@@ -575,7 +618,7 @@ export default function CeoVisualReportPage() {
           </div>
         )}
 
-        {/* FORMULARIO DE CARGA MENSUAL */}
+        {/* FORMULARIO DE CARGA MENSUAL CON CANALES DINÁMICOS */}
         {editMode && (
           <form
             onSubmit={handleSave}
@@ -587,36 +630,60 @@ export default function CeoVisualReportPage() {
                   Carga de Matriz Mensual · {selectedMonth}
                 </h2>
                 <p className="text-[11px] text-slate-500">
-                  Introduce los cierres de cada red social. Si aún no tienes datos de inversión o ventas, déjalos en 0.
+                  Añade, edita o elimina cualquier canal o medio (ej. Google Ads, Email, Prensa, Pinterest).
                 </p>
               </div>
-              <button
-                type="submit"
-                className="inline-flex items-center gap-1.5 bg-black text-white font-black px-5 py-2.5 rounded-full cursor-pointer"
-              >
-                <Save className="w-4 h-4 text-[#f5b514]" />
-                <span>Guardar Informe</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleAddChannel}
+                  className="inline-flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 text-[#015b9d] border border-sky-200 font-black px-4 py-2 rounded-full cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Añadir Canal / Medio</span>
+                </button>
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-1.5 bg-black text-white font-black px-5 py-2 rounded-full cursor-pointer"
+                >
+                  <Save className="w-4 h-4 text-[#f5b514]" />
+                  <span>Guardar Informe</span>
+                </button>
+              </div>
             </div>
 
-            <div>
-              <label className="block font-extrabold text-[#081b2b] mb-1">
-                Conclusión Ejecutiva Principal (2 líneas para el CEO)
-              </label>
-              <textarea
-                rows={2}
-                value={draft.executive_headline}
-                onChange={(e) => setDraft({ ...draft, executive_headline: e.target.value })}
-                className="w-full p-2.5 rounded-xl border border-slate-300 text-xs"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div>
+                <label className="block font-extrabold text-[#081b2b] mb-1">
+                  Etiqueta del Periodo
+                </label>
+                <input
+                  type="text"
+                  value={draft.period_label}
+                  onChange={(e) => setDraft({ ...draft, period_label: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-slate-300 text-xs font-bold"
+                />
+              </div>
+              <div className="md:col-span-3">
+                <label className="block font-extrabold text-[#081b2b] mb-1">
+                  Conclusión Ejecutiva Principal (2 líneas para el CEO)
+                </label>
+                <textarea
+                  rows={2}
+                  value={draft.executive_headline}
+                  onChange={(e) => setDraft({ ...draft, executive_headline: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-slate-300 text-xs"
+                />
+              </div>
             </div>
 
             <div className="overflow-x-auto rounded-2xl border border-slate-200">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-black text-white text-[10px] font-extrabold uppercase">
-                    <th className="p-2.5">Red Social</th>
-                    <th className="p-2.5 text-right">Comunidad Total</th>
+                    <th className="p-2.5">Color</th>
+                    <th className="p-2.5">Canal / Fuente / Medio</th>
+                    <th className="p-2.5 text-right">Comunidad / Base</th>
                     <th className="p-2.5 text-right">Crec. Orgánico (+/-)</th>
                     <th className="p-2.5 text-right">Alcance Orgánico</th>
                     <th className="p-2.5 text-right">Paid Media (Imp/Clics)</th>
@@ -628,26 +695,36 @@ export default function CeoVisualReportPage() {
                         <th className="p-2.5 text-right">Ingresos (€)</th>
                       </>
                     )}
+                    <th className="p-2.5 text-center">Quitar</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
-                  {(
-                    [
-                      { key: 'tiktok', label: 'TikTok' },
-                      { key: 'instagram', label: 'Instagram' },
-                      { key: 'facebook', label: 'Facebook' },
-                      { key: 'linkedin', label: 'LinkedIn' },
-                      { key: 'youtube', label: 'YouTube' },
-                    ] as const
-                  ).map((row) => (
-                    <tr key={row.key} className="hover:bg-slate-50">
-                      <td className="p-2 font-black text-[#081b2b]">{row.label}</td>
+                  {draft.channels.map((row) => (
+                    <tr key={row.id} className="hover:bg-slate-50">
+                      <td className="p-1.5 text-center">
+                        <input
+                          type="color"
+                          value={row.color}
+                          onChange={(e) => updateChannelField(row.id, 'color', e.target.value)}
+                          className="w-7 h-7 rounded cursor-pointer border-0 bg-transparent"
+                          title="Elegir color del canal"
+                        />
+                      </td>
+                      <td className="p-1.5">
+                        <input
+                          type="text"
+                          value={row.name}
+                          onChange={(e) => updateChannelField(row.id, 'name', e.target.value)}
+                          placeholder="Ej. Google Ads, Email, Prensa..."
+                          className="w-36 px-2 py-1 rounded border border-slate-300 font-black text-[#081b2b]"
+                        />
+                      </td>
                       <td className="p-1.5 text-right">
                         <input
                           type="number"
-                          value={draft[row.key].followers_total}
+                          value={row.followers_total}
                           onChange={(e) =>
-                            updateRow(row.key, 'followers_total', Number(e.target.value))
+                            updateChannelField(row.id, 'followers_total', Number(e.target.value))
                           }
                           className="w-24 px-2 py-1 rounded border border-slate-300 text-right font-bold"
                         />
@@ -655,9 +732,9 @@ export default function CeoVisualReportPage() {
                       <td className="p-1.5 text-right">
                         <input
                           type="number"
-                          value={draft[row.key].organic_growth_net}
+                          value={row.organic_growth_net}
                           onChange={(e) =>
-                            updateRow(row.key, 'organic_growth_net', Number(e.target.value))
+                            updateChannelField(row.id, 'organic_growth_net', Number(e.target.value))
                           }
                           className="w-20 px-2 py-1 rounded border border-slate-300 text-right font-bold"
                         />
@@ -665,9 +742,9 @@ export default function CeoVisualReportPage() {
                       <td className="p-1.5 text-right">
                         <input
                           type="number"
-                          value={draft[row.key].organic_reach}
+                          value={row.organic_reach}
                           onChange={(e) =>
-                            updateRow(row.key, 'organic_reach', Number(e.target.value))
+                            updateChannelField(row.id, 'organic_reach', Number(e.target.value))
                           }
                           className="w-24 px-2 py-1 rounded border border-slate-300 text-right font-bold"
                         />
@@ -675,9 +752,9 @@ export default function CeoVisualReportPage() {
                       <td className="p-1.5 text-right">
                         <input
                           type="number"
-                          value={draft[row.key].paid_reach_clicks}
+                          value={row.paid_reach_clicks}
                           onChange={(e) =>
-                            updateRow(row.key, 'paid_reach_clicks', Number(e.target.value))
+                            updateChannelField(row.id, 'paid_reach_clicks', Number(e.target.value))
                           }
                           className="w-24 px-2 py-1 rounded border border-slate-300 text-right font-bold"
                         />
@@ -685,9 +762,9 @@ export default function CeoVisualReportPage() {
                       <td className="p-1.5 text-right">
                         <input
                           type="number"
-                          value={draft[row.key].web_visits}
+                          value={row.web_visits}
                           onChange={(e) =>
-                            updateRow(row.key, 'web_visits', Number(e.target.value))
+                            updateChannelField(row.id, 'web_visits', Number(e.target.value))
                           }
                           className="w-20 px-2 py-1 rounded border border-slate-300 text-right font-bold"
                         />
@@ -698,9 +775,9 @@ export default function CeoVisualReportPage() {
                             <input
                               type="number"
                               step="any"
-                              value={draft[row.key].ad_spend}
+                              value={row.ad_spend}
                               onChange={(e) =>
-                                updateRow(row.key, 'ad_spend', Number(e.target.value))
+                                updateChannelField(row.id, 'ad_spend', Number(e.target.value))
                               }
                               className="w-20 px-2 py-1 rounded border border-emerald-300 bg-emerald-50/50 text-right font-bold"
                             />
@@ -708,9 +785,9 @@ export default function CeoVisualReportPage() {
                           <td className="p-1.5 text-right">
                             <input
                               type="number"
-                              value={draft[row.key].conversions}
+                              value={row.conversions}
                               onChange={(e) =>
-                                updateRow(row.key, 'conversions', Number(e.target.value))
+                                updateChannelField(row.id, 'conversions', Number(e.target.value))
                               }
                               className="w-20 px-2 py-1 rounded border border-emerald-300 bg-emerald-50/50 text-right font-bold"
                             />
@@ -719,55 +796,96 @@ export default function CeoVisualReportPage() {
                             <input
                               type="number"
                               step="any"
-                              value={draft[row.key].revenue}
+                              value={row.revenue}
                               onChange={(e) =>
-                                updateRow(row.key, 'revenue', Number(e.target.value))
+                                updateChannelField(row.id, 'revenue', Number(e.target.value))
                               }
                               className="w-24 px-2 py-1 rounded border border-emerald-300 bg-emerald-50/50 text-right font-bold"
                             />
                           </td>
                         </>
                       )}
+                      <td className="p-1.5 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveChannel(row.id)}
+                          disabled={draft.channels.length <= 1}
+                          title="Eliminar canal"
+                          className="p-1 text-slate-400 hover:text-rose-600 disabled:opacity-30 cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4 mx-auto" />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {draft.directives.map((dir, i) => (
-                <div key={i} className="p-3 rounded-2xl bg-amber-50 border border-amber-200 space-y-2">
-                  <div className="flex items-center justify-between gap-2">
+            {/* Directivas dinámicas */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-black text-[#081b2b] uppercase">
+                  Directivas Estratégicas del Mes
+                </span>
+                <button
+                  type="button"
+                  onClick={handleAddDirective}
+                  className="inline-flex items-center gap-1 text-[11px] font-black text-[#015b9d] hover:underline cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Añadir Directiva
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {draft.directives.map((dir) => (
+                  <div
+                    key={dir.id}
+                    className="p-3 rounded-2xl bg-amber-50 border border-amber-200 space-y-2"
+                  >
+                    <div className="flex items-center justify-between gap-1.5">
+                      <input
+                        type="text"
+                        value={dir.area}
+                        onChange={(e) => updateDirective(dir.id, 'area', e.target.value)}
+                        className="font-bold text-xs bg-white px-2 py-1 rounded border border-slate-300 w-full"
+                      />
+                      <select
+                        value={dir.status}
+                        onChange={(e) => updateDirective(dir.id, 'status', e.target.value)}
+                        className="text-[10px] font-black px-2 py-1 rounded bg-black text-[#f5b514]"
+                      >
+                        <option value="ESCALAR">ESCALAR</option>
+                        <option value="CORREGIR">CORREGIR</option>
+                        <option value="MANTENER">MANTENER</option>
+                      </select>
+                      {draft.directives.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveDirective(dir.id)}
+                          className="text-slate-400 hover:text-rose-600 cursor-pointer"
+                          title="Eliminar directiva"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    <textarea
+                      rows={2}
+                      value={dir.decision}
+                      onChange={(e) => updateDirective(dir.id, 'decision', e.target.value)}
+                      className="w-full p-2 rounded bg-white border border-slate-300 text-[11px]"
+                    />
                     <input
                       type="text"
-                      value={dir.area}
-                      onChange={(e) => updateDirective(i, 'area', e.target.value)}
-                      className="font-bold text-xs bg-white px-2 py-1 rounded border border-slate-300 w-full"
+                      value={dir.expected_impact}
+                      onChange={(e) =>
+                        updateDirective(dir.id, 'expected_impact', e.target.value)
+                      }
+                      className="w-full px-2 py-1 rounded bg-white border border-slate-300 text-[11px] font-semibold"
                     />
-                    <select
-                      value={dir.status}
-                      onChange={(e) => updateDirective(i, 'status', e.target.value)}
-                      className="text-[10px] font-black px-2 py-1 rounded bg-black text-[#f5b514]"
-                    >
-                      <option value="ESCALAR">ESCALAR</option>
-                      <option value="CORREGIR">CORREGIR</option>
-                      <option value="MANTENER">MANTENER</option>
-                    </select>
                   </div>
-                  <textarea
-                    rows={2}
-                    value={dir.decision}
-                    onChange={(e) => updateDirective(i, 'decision', e.target.value)}
-                    className="w-full p-2 rounded bg-white border border-slate-300 text-[11px]"
-                  />
-                  <input
-                    type="text"
-                    value={dir.expected_impact}
-                    onChange={(e) => updateDirective(i, 'expected_impact', e.target.value)}
-                    className="w-full px-2 py-1 rounded bg-white border border-slate-300 text-[11px] font-semibold"
-                  />
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </form>
         )}
@@ -895,7 +1013,7 @@ export default function CeoVisualReportPage() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-xs font-black uppercase tracking-wider text-black">
-                  1. Matriz de Rendimiento por Red Social (Semáforo Ejecutivo)
+                  1. Matriz de Rendimiento por Canal / Medio ({summary.channels.length} activos)
                 </h2>
                 <div className="flex items-center gap-3 text-[10px] font-bold">
                   <span className="inline-flex items-center gap-1 text-emerald-700">
@@ -911,8 +1029,8 @@ export default function CeoVisualReportPage() {
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-slate-200/90 text-[#111827] text-[11px] font-black border-b border-slate-300">
-                      <th className="py-2.5 px-3.5 bg-slate-300/80">Red Social</th>
-                      <th className="py-2.5 px-3 text-center">Comunidad</th>
+                      <th className="py-2.5 px-3.5 bg-slate-300/80">Canal / Medio</th>
+                      <th className="py-2.5 px-3 text-center">Comunidad / Base</th>
                       <th className="py-2.5 px-3 text-center">Crecimiento Orgánico</th>
                       <th className="py-2.5 px-3 text-center">Paid Media</th>
                       <th className="py-2.5 px-3 text-center">Visitas a la Web</th>
@@ -925,11 +1043,10 @@ export default function CeoVisualReportPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
-                    {summary.networks.map((net) => {
-                      const d = net.data;
-                      const orgPositive = d.organic_growth_net >= 100;
-                      const paidActive = d.paid_reach_clicks > 0;
-                      const visitsGood = d.web_visits >= 500;
+                    {summary.channels.map((net) => {
+                      const orgPositive = net.organic_growth_net >= 100;
+                      const paidActive = net.paid_reach_clicks > 0;
+                      const visitsGood = net.web_visits >= 500;
                       return (
                         <tr key={net.id} className="hover:bg-slate-50">
                           <td className="py-2.5 px-3.5 font-black bg-slate-100/80 text-[#081b2b] flex items-center gap-2">
@@ -941,7 +1058,7 @@ export default function CeoVisualReportPage() {
                           </td>
 
                           <td className="py-2.5 px-3 text-center font-black text-slate-900">
-                            {formatCompact(d.followers_total)}
+                            {net.followers_total > 0 ? formatCompact(net.followers_total) : '—'}
                           </td>
 
                           <td className="py-2.5 px-3 text-center">
@@ -955,12 +1072,12 @@ export default function CeoVisualReportPage() {
                               ) : (
                                 <TrendingDown className="w-3.5 h-3.5" />
                               )}
-                              {d.organic_growth_net >= 0
-                                ? `+${formatCompact(d.organic_growth_net)}`
-                                : formatCompact(d.organic_growth_net)}
+                              {net.organic_growth_net >= 0
+                                ? `+${formatCompact(net.organic_growth_net)}`
+                                : formatCompact(net.organic_growth_net)}
                             </span>
                             <div className="text-[10px] text-slate-400">
-                              ({formatCompact(d.organic_reach)} imp.)
+                              ({formatCompact(net.organic_reach)} imp.)
                             </div>
                           </td>
 
@@ -970,7 +1087,7 @@ export default function CeoVisualReportPage() {
                                 paidActive ? 'text-emerald-600' : 'text-rose-600'
                               }`}
                             >
-                              {paidActive ? formatCompact(d.paid_reach_clicks) : 'Sin pauta'}
+                              {paidActive ? formatCompact(net.paid_reach_clicks) : 'Sin pauta'}
                             </span>
                           </td>
 
@@ -980,17 +1097,17 @@ export default function CeoVisualReportPage() {
                                 visitsGood ? 'text-emerald-600' : 'text-rose-600'
                               }`}
                             >
-                              {formatCompact(d.web_visits)}
+                              {formatCompact(net.web_visits)}
                             </span>
                           </td>
 
                           {draft.show_financials && (
                             <>
                               <td className="py-2.5 px-3 text-center font-bold text-slate-800">
-                                {formatEur(d.ad_spend)}
+                                {formatEur(net.ad_spend)}
                               </td>
                               <td className="py-2.5 px-3 text-center font-black text-emerald-700">
-                                {d.conversions} ({formatEur(d.revenue)})
+                                {net.conversions} ({formatEur(net.revenue)})
                               </td>
                             </>
                           )}
@@ -1045,41 +1162,54 @@ export default function CeoVisualReportPage() {
                 </div>
 
                 <div className="space-y-2.5">
-                  {summary.networks.map((net) => {
+                  {summary.channels.map((net) => {
                     const orgPct = Math.round(
-                      (net.data.organic_reach / summary.maxCombinedImpact) * 100
+                      (Number(net.organic_reach || 0) / summary.maxCombinedImpact) * 100
                     );
                     const paidPct = Math.round(
-                      (net.data.paid_reach_clicks / summary.maxCombinedImpact) * 100
+                      (Number(net.paid_reach_clicks || 0) / summary.maxCombinedImpact) * 100
                     );
                     const visitPct = Math.max(
                       4,
-                      Math.round((net.data.web_visits / summary.maxWebVisits) * 100)
+                      Math.round((Number(net.web_visits || 0) / summary.maxWebVisits) * 100)
                     );
                     return (
-                      <div key={net.id} className="bg-white p-2.5 rounded-xl border border-slate-200/80 space-y-1.5">
+                      <div
+                        key={net.id}
+                        className="bg-white p-2.5 rounded-xl border border-slate-200/80 space-y-1.5"
+                      >
                         <div className="flex justify-between text-[11px]">
-                          <span className="font-black text-[#081b2b]">{net.name}</span>
+                          <span className="font-black text-[#081b2b] flex items-center gap-1.5">
+                            <span
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: net.color }}
+                            />
+                            {net.name}
+                          </span>
                           <span className="text-slate-500">
                             Impacto:{' '}
                             <strong>
-                              {formatCompact(net.data.organic_reach + net.data.paid_reach_clicks)}
+                              {formatCompact(
+                                Number(net.organic_reach || 0) + Number(net.paid_reach_clicks || 0)
+                              )}
                             </strong>{' '}
                             · Web:{' '}
                             <strong className="text-[#ed6723]">
-                              {formatCompact(net.data.web_visits)} visitas
+                              {formatCompact(net.web_visits)} visitas
                             </strong>
                           </span>
                         </div>
                         <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden flex">
                           <div
                             className="bg-emerald-500 h-full"
-                            style={{ width: `${Math.max(orgPct, net.data.organic_reach > 0 ? 3 : 0)}%` }}
+                            style={{
+                              width: `${Math.max(orgPct, net.organic_reach > 0 ? 3 : 0)}%`,
+                            }}
                           />
                           <div
                             className="bg-[#015b9d] h-full"
                             style={{
-                              width: `${Math.max(paidPct, net.data.paid_reach_clicks > 0 ? 3 : 0)}%`,
+                              width: `${Math.max(paidPct, net.paid_reach_clicks > 0 ? 3 : 0)}%`,
                             }}
                           />
                         </div>
@@ -1133,17 +1263,17 @@ export default function CeoVisualReportPage() {
                       </div>
                     </div>
 
-                    <div className="space-y-1 text-[11px] w-full">
+                    <div className="space-y-1 text-[11px] w-full max-h-28 overflow-y-auto pr-1">
                       {summary.donut.map((seg) => (
                         <div key={seg.id} className="flex items-center justify-between">
-                          <span className="flex items-center gap-1.5 font-bold text-slate-700">
+                          <span className="flex items-center gap-1.5 font-bold text-slate-700 truncate">
                             <span
-                              className="w-2 h-2 rounded-full"
+                              className="w-2 h-2 rounded-full shrink-0"
                               style={{ backgroundColor: seg.color }}
                             />
-                            {seg.name}
+                            <span className="truncate">{seg.name}</span>
                           </span>
-                          <span className="font-black text-black">{seg.pct.toFixed(1)}%</span>
+                          <span className="font-black text-black ml-1">{seg.pct.toFixed(1)}%</span>
                         </div>
                       ))}
                     </div>
@@ -1189,7 +1319,7 @@ export default function CeoVisualReportPage() {
               </div>
             </div>
 
-            {/* BLOQUE FINAL: 3 DIRECTIVAS EJECUTIVAS */}
+            {/* BLOQUE FINAL: DIRECTIVAS EJECUTIVAS */}
             <div className="rounded-2xl bg-amber-50 border-2 border-[#f5b514] p-4 space-y-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -1204,7 +1334,7 @@ export default function CeoVisualReportPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {draft.directives.map((dir, i) => {
+                {draft.directives.map((dir) => {
                   const pill =
                     dir.status === 'ESCALAR'
                       ? 'bg-emerald-700 text-white'
@@ -1213,7 +1343,7 @@ export default function CeoVisualReportPage() {
                         : 'bg-black text-[#f5b514]';
                   return (
                     <div
-                      key={i}
+                      key={dir.id}
                       className="bg-white p-3 rounded-xl border border-amber-200 flex flex-col justify-between gap-2"
                     >
                       <div>
