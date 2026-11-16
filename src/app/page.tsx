@@ -39,17 +39,26 @@ export type ObjectiveCategory =
   | 'Ventas / Compras'
   | 'Alcance / Branding';
 
-interface DynamicChannel {
+// BLOQUE A: Presencia Orgánica por Canal (1 fila por plataforma, nunca duplica comunidad)
+interface OrganicChannelRow {
   id: string;
   name: string;
   color: string;
-  objective_type: ObjectiveCategory;
-  result_unit_label: string;
   followers_total: number;
   organic_growth_net: number;
   organic_reach: number;
-  paid_reach_clicks: number;
   web_visits: number;
+}
+
+// BLOQUE B: Campañas de Pago desglosadas por Objetivo
+interface PaidCampaignRow {
+  id: string;
+  platform: string;
+  campaign_label: string;
+  color: string;
+  objective_type: ObjectiveCategory;
+  result_unit_label: string;
+  paid_reach: number;
   ad_spend: number;
   results_count: number;
   revenue: number;
@@ -81,12 +90,13 @@ interface ClientTemplateReport {
   web_kpi_subtitle: string;
   report_month: string;
   period_label: string;
-  target_max_cpa: number; // Coste máximo rentable por resultado/lead/venta (€)
-  target_min_roas: number; // ROAS mínimo rentable (ej. 3.0x)
+  target_max_cpa: number;
+  target_min_roas: number;
   auto_diagnosis: boolean;
   custom_headline: string;
-  show_financials: boolean;
-  channels: DynamicChannel[];
+  show_paid_section: boolean;
+  organic_channels: OrganicChannelRow[];
+  paid_campaigns: PaidCampaignRow[];
   markets: MarketSegment[];
   competitive_note_title: string;
   competitive_note_text: string;
@@ -96,7 +106,7 @@ interface ClientTemplateReport {
 const SIAM_LOGO_URL =
   'https://siampark.net/templates/yootheme/cache/d1/siam-park-tenerife-main-logo-d1ab9a93.webp';
 
-const STORAGE_KEY = 'agency_ceo_profitability_engine_v8';
+const STORAGE_KEY = 'agency_ceo_dual_matrix_v9';
 
 const PRESET_COLORS = [
   '#0f172a',
@@ -112,7 +122,7 @@ const PRESET_COLORS = [
 
 const OBJECTIVE_UNIT_DEFAULTS: Record<ObjectiveCategory, string> = {
   'Tráfico Web': 'clics',
-  'Mensajes / Leads': 'leads',
+  'Mensajes / Leads': 'mensajes',
   'Ventas / Compras': 'ventas',
   'Alcance / Branding': 'impactos',
 };
@@ -128,81 +138,77 @@ const DEFAULT_SIAM_TEMPLATE: ClientTemplateReport = {
   target_min_roas: 3.0,
   auto_diagnosis: true,
   custom_headline: '',
-  show_financials: true,
-  channels: [
+  show_paid_section: true,
+  organic_channels: [
     {
-      id: 'tiktok',
+      id: 'org-tiktok',
       name: 'TikTok',
       color: '#0f172a',
-      objective_type: 'Alcance / Branding',
-      result_unit_label: 'impactos',
       followers_total: 20350,
       organic_growth_net: 1250,
       organic_reach: 163620,
-      paid_reach_clicks: 18400,
       web_visits: 640,
-      ad_spend: 0,
-      results_count: 0,
-      revenue: 0,
     },
     {
-      id: 'instagram',
+      id: 'org-ig',
       name: 'Instagram',
       color: '#e1306c',
-      objective_type: 'Alcance / Branding',
-      result_unit_label: 'impactos',
       followers_total: 218770,
       organic_growth_net: 441,
       organic_reach: 1690000,
-      paid_reach_clicks: 24500,
       web_visits: 1120,
-      ad_spend: 0,
-      results_count: 0,
-      revenue: 0,
     },
     {
-      id: 'facebook',
+      id: 'org-fb',
       name: 'Facebook',
       color: '#1877f2',
-      objective_type: 'Tráfico Web',
-      result_unit_label: 'clics',
       followers_total: 352290,
       organic_growth_net: 424,
       organic_reach: 736800,
-      paid_reach_clicks: 15200,
       web_visits: 2453,
-      ad_spend: 0,
-      results_count: 2453,
-      revenue: 0,
     },
     {
-      id: 'linkedin',
+      id: 'org-li',
       name: 'LinkedIn',
       color: '#0a66c2',
-      objective_type: 'Alcance / Branding',
-      result_unit_label: 'impactos',
       followers_total: 3200,
       organic_growth_net: 85,
       organic_reach: 14200,
-      paid_reach_clicks: 0,
       web_visits: 190,
-      ad_spend: 0,
-      results_count: 0,
-      revenue: 0,
     },
     {
-      id: 'youtube',
+      id: 'org-yt',
       name: 'YouTube',
       color: '#dc2626',
-      objective_type: 'Alcance / Branding',
-      result_unit_label: 'views',
       followers_total: 9610,
       organic_growth_net: 48,
       organic_reach: 46850,
-      paid_reach_clicks: 81500,
       web_visits: 520,
+    },
+  ],
+  paid_campaigns: [
+    {
+      id: 'paid-yt-brand',
+      platform: 'YouTube Ads',
+      campaign_label: 'Vídeo Descubrimiento UK/ES',
+      color: '#dc2626',
+      objective_type: 'Alcance / Branding',
+      result_unit_label: 'views',
+      paid_reach: 81500,
       ad_spend: 0,
-      results_count: 0,
+      results_count: 81500,
+      revenue: 0,
+    },
+    {
+      id: 'paid-ig-traf',
+      platform: 'Instagram Ads',
+      campaign_label: 'Impulso Alcance y Web',
+      color: '#e1306c',
+      objective_type: 'Tráfico Web',
+      result_unit_label: 'clics',
+      paid_reach: 24500,
+      ad_spend: 0,
+      results_count: 1120,
       revenue: 0,
     },
   ],
@@ -266,38 +272,76 @@ const createBlankClientTemplate = (month: string): ClientTemplateReport => ({
   web_kpi_subtitle: 'Clics directos hacia web / contacto',
   report_month: month,
   period_label: `Cierre Mensual · ${month}`,
-  target_max_cpa: 12,
+  target_max_cpa: 5,
   target_min_roas: 3.0,
   auto_diagnosis: true,
   custom_headline: '',
-  show_financials: true,
-  channels: [
+  show_paid_section: true,
+  organic_channels: [
     {
-      id: 'ch-ig-trafico',
-      name: 'Instagram · Tráfico',
+      id: 'org-ig',
+      name: 'Instagram',
       color: '#e1306c',
-      objective_type: 'Tráfico Web',
-      result_unit_label: 'clics',
       followers_total: 0,
       organic_growth_net: 0,
       organic_reach: 0,
-      paid_reach_clicks: 0,
       web_visits: 0,
+    },
+    {
+      id: 'org-fb',
+      name: 'Facebook',
+      color: '#1877f2',
+      followers_total: 0,
+      organic_growth_net: 0,
+      organic_reach: 0,
+      web_visits: 0,
+    },
+  ],
+  paid_campaigns: [
+    {
+      id: 'paid-fb-msg',
+      platform: 'Facebook',
+      campaign_label: 'Campaña Mensajes',
+      color: '#1877f2',
+      objective_type: 'Mensajes / Leads',
+      result_unit_label: 'mensajes',
+      paid_reach: 0,
       ad_spend: 0,
       results_count: 0,
       revenue: 0,
     },
     {
-      id: 'ch-fb-mensajes',
-      name: 'Facebook · Mensajes',
+      id: 'paid-fb-traf',
+      platform: 'Facebook',
+      campaign_label: 'Campaña Tráfico Web',
       color: '#1877f2',
+      objective_type: 'Tráfico Web',
+      result_unit_label: 'clics',
+      paid_reach: 0,
+      ad_spend: 0,
+      results_count: 0,
+      revenue: 0,
+    },
+    {
+      id: 'paid-ig-traf',
+      platform: 'Instagram',
+      campaign_label: 'Campaña Tráfico Web',
+      color: '#e1306c',
+      objective_type: 'Tráfico Web',
+      result_unit_label: 'clics',
+      paid_reach: 0,
+      ad_spend: 0,
+      results_count: 0,
+      revenue: 0,
+    },
+    {
+      id: 'paid-ig-msg',
+      platform: 'Instagram',
+      campaign_label: 'Campaña Mensajes',
+      color: '#e1306c',
       objective_type: 'Mensajes / Leads',
-      result_unit_label: 'leads',
-      followers_total: 0,
-      organic_growth_net: 0,
-      organic_reach: 0,
-      paid_reach_clicks: 0,
-      web_visits: 0,
+      result_unit_label: 'mensajes',
+      paid_reach: 0,
       ad_spend: 0,
       results_count: 0,
       revenue: 0,
@@ -321,16 +365,16 @@ const createBlankClientTemplate = (month: string): ClientTemplateReport => ({
   directives: [
     {
       id: 'dir-new-1',
-      area: '1. Escalar Canal Rentable',
+      area: '1. Escalar Objetivo Más Rentable',
       status: 'ESCALAR',
-      decision: 'Reasignar presupuesto desde campañas sin retorno hacia el canal con menor CPA.',
+      decision: 'Reasignar presupuesto hacia las campañas con menor coste por lead/venta.',
       expected_impact: '+25% conversiones manteniendo gasto.',
     },
     {
       id: 'dir-new-2',
       area: '2. Optimizar Conversión Web',
       status: 'CORREGIR',
-      decision: 'Mejorar página de destino y oferta para convertir el tráfico que llega y no compra.',
+      decision: 'Mejorar página de destino y oferta para convertir el tráfico que llega y no cierra.',
       expected_impact: 'Subir tasa de conversión web.',
     },
     {
@@ -345,31 +389,31 @@ const createBlankClientTemplate = (month: string): ClientTemplateReport => ({
 
 const DATA_SOURCES_GUIDE = [
   {
-    network: 'Meta Business (Orgánico)',
+    network: 'Bloque A: Meta Business (Orgánico)',
     color: '#e1306c',
-    organic: 'Estadísticas → Resultados: "Seguidores" (Crec. orgánico) y "Visualizaciones" (Alcance).',
-    paid: 'Ver bloque Meta Ads Manager.',
-    web: 'Estadísticas → Resultados: "Clics en el enlace" (total del mes).',
+    organic: '1 fila por red (IG / FB): Público (Seguidores totales) + Resultados (Seguidores nuevos y Visualizaciones).',
+    paid: 'No poner gasto aquí (va en el Bloque B para no duplicar comunidad).',
+    web: 'Resultados → "Clics en el enlace" totales del mes.',
   },
   {
-    network: 'Meta Ads por Objetivo',
+    network: 'Bloque B: Meta Ads por Objetivo',
     color: '#1877f2',
     organic: '—',
     paid: 'Tabla dinámica por Objetivo + Plataforma → Columna "Alcance" y "Monto gastado".',
-    web: 'Columna "Resultados": separa filas de Tráfico (clics) de filas de Mensajes (leads).',
+    web: 'Columna "Resultados": crea una fila para Tráfico (clics) y otra para Mensajes (leads).',
   },
   {
     network: 'TikTok & YouTube',
     color: '#0f172a',
     organic: 'TikTok Studio / YouTube Studio → Estadísticas → Seguidores netos + Visualizaciones.',
-    paid: 'TikTok Ads / Google Ads → Alcance/Impresiones y Coste total.',
+    paid: 'Si haces pauta, añade una fila en el Bloque B con su gasto y resultados.',
     web: 'Clics en enlace de bio/tarjetas + Google Analytics 4.',
   },
   {
     network: 'Google / LinkedIn / Otros',
     color: '#16a34a',
     organic: 'Search Console / LinkedIn Análisis → Impresiones y nuevos seguidores.',
-    paid: 'Google Ads / LinkedIn Campaign Manager → Impresiones, Gasto y Conversiones.',
+    paid: 'Google Ads / LinkedIn Campaign Manager → Impresiones, Gasto y Conversiones en Bloque B.',
     web: 'GA4 → Adquisición de tráfico (Sesiones por fuente/medio).',
   },
 ];
@@ -388,7 +432,7 @@ function formatEur(val: number): string {
   }).format(val);
 }
 
-export default function CeoProfitabilityReportPage() {
+export default function CeoDualMatrixReportPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>('2026-10');
   const [reportsMap, setReportsMap] = useState<Record<string, ClientTemplateReport>>({
     '2026-10': DEFAULT_SIAM_TEMPLATE,
@@ -434,7 +478,7 @@ export default function CeoProfitabilityReportPage() {
     setLogoError(false);
     setDraft(createBlankClientTemplate(selectedMonth));
     setEditMode(true);
-    setToast('Plantilla en blanco lista para nuevo cliente');
+    setToast('Plantilla en blanco lista (Orgánico + Paid separados)');
     setTimeout(() => setToast(null), 3000);
   };
 
@@ -462,7 +506,7 @@ export default function CeoProfitabilityReportPage() {
       // Ignorar
     }
     setEditMode(false);
-    setToast('Diagnóstico de rentabilidad actualizado');
+    setToast('Informe actualizado sin duplicidades');
     setTimeout(() => setToast(null), 3000);
   };
 
@@ -507,24 +551,62 @@ export default function CeoProfitabilityReportPage() {
     reader.readAsText(file);
   };
 
-  // Gestión dinámica de canales
-  const handleAddChannel = () => {
-    const nextColor = PRESET_COLORS[draft.channels.length % PRESET_COLORS.length];
+  // CRUD Bloque A: Canales Orgánicos
+  const handleAddOrganic = () => {
+    const nextColor = PRESET_COLORS[draft.organic_channels.length % PRESET_COLORS.length];
     setDraft((prev) => ({
       ...prev,
-      channels: [
-        ...prev.channels,
+      organic_channels: [
+        ...prev.organic_channels,
         {
-          id: `ch-${Date.now()}`,
+          id: `org-${Date.now()}`,
           name: 'Nuevo Canal',
           color: nextColor,
-          objective_type: 'Tráfico Web',
-          result_unit_label: 'clics',
           followers_total: 0,
           organic_growth_net: 0,
           organic_reach: 0,
-          paid_reach_clicks: 0,
           web_visits: 0,
+        },
+      ],
+    }));
+  };
+
+  const handleRemoveOrganic = (id: string) => {
+    if (draft.organic_channels.length <= 1) return;
+    setDraft((prev) => ({
+      ...prev,
+      organic_channels: prev.organic_channels.filter((c) => c.id !== id),
+    }));
+  };
+
+  const updateOrganicField = <K extends keyof OrganicChannelRow>(
+    id: string,
+    field: K,
+    value: OrganicChannelRow[K]
+  ) => {
+    setDraft((prev) => ({
+      ...prev,
+      organic_channels: prev.organic_channels.map((ch) =>
+        ch.id === id ? { ...ch, [field]: value } : ch
+      ),
+    }));
+  };
+
+  // CRUD Bloque B: Campañas Paid por Objetivo
+  const handleAddPaid = () => {
+    const nextColor = PRESET_COLORS[draft.paid_campaigns.length % PRESET_COLORS.length];
+    setDraft((prev) => ({
+      ...prev,
+      paid_campaigns: [
+        ...prev.paid_campaigns,
+        {
+          id: `paid-${Date.now()}`,
+          platform: 'Meta Ads',
+          campaign_label: 'Nueva Campaña',
+          color: nextColor,
+          objective_type: 'Mensajes / Leads',
+          result_unit_label: 'mensajes',
+          paid_reach: 0,
           ad_spend: 0,
           results_count: 0,
           revenue: 0,
@@ -533,37 +615,36 @@ export default function CeoProfitabilityReportPage() {
     }));
   };
 
-  const handleRemoveChannel = (id: string) => {
-    if (draft.channels.length <= 1) return;
+  const handleRemovePaid = (id: string) => {
     setDraft((prev) => ({
       ...prev,
-      channels: prev.channels.filter((c) => c.id !== id),
+      paid_campaigns: prev.paid_campaigns.filter((c) => c.id !== id),
     }));
   };
 
-  const updateChannelField = <K extends keyof DynamicChannel>(
+  const updatePaidField = <K extends keyof PaidCampaignRow>(
     id: string,
     field: K,
-    value: DynamicChannel[K]
+    value: PaidCampaignRow[K]
   ) => {
     setDraft((prev) => ({
       ...prev,
-      channels: prev.channels.map((ch) => {
-        if (ch.id !== id) return ch;
+      paid_campaigns: prev.paid_campaigns.map((camp) => {
+        if (camp.id !== id) return camp;
         if (field === 'objective_type') {
           const objCat = value as ObjectiveCategory;
           return {
-            ...ch,
+            ...camp,
             objective_type: objCat,
             result_unit_label: OBJECTIVE_UNIT_DEFAULTS[objCat],
           };
         }
-        return { ...ch, [field]: value };
+        return { ...camp, [field]: value };
       }),
     }));
   };
 
-  // Gestión dinámica de mercados
+  // CRUD Mercados
   const handleAddMarket = () => {
     setDraft((prev) => ({
       ...prev,
@@ -601,7 +682,7 @@ export default function CeoProfitabilityReportPage() {
     }));
   };
 
-  // Gestión dinámica de directivas
+  // CRUD Directivas
   const handleAddDirective = () => {
     const num = draft.directives.length + 1;
     setDraft((prev) => ({
@@ -637,60 +718,57 @@ export default function CeoProfitabilityReportPage() {
   };
 
   // =========================================================================
-  // MOTOR DE AUDITORÍA FINANCIERA, RENTABILIDAD Y DETECCIÓN DE FUGAS PARA CEO
+  // MOTOR DE CÁLCULO SIN DUPLICIDADES (ORGÁNICO POR CANAL + PAID POR OBJETIVO)
   // =========================================================================
   const summary = useMemo(() => {
-    const list = draft.channels;
-    const totalFollowers = list.reduce((s, n) => s + Number(n.followers_total || 0), 0);
-    const totalOrganicGrowth = list.reduce((s, n) => s + Number(n.organic_growth_net || 0), 0);
-    const totalOrganicReach = list.reduce((s, n) => s + Number(n.organic_reach || 0), 0);
-    const totalPaid = list.reduce((s, n) => s + Number(n.paid_reach_clicks || 0), 0);
-    const totalWebVisits = list.reduce((s, n) => s + Number(n.web_visits || 0), 0);
-    const totalAdSpend = list.reduce((s, n) => s + Number(n.ad_spend || 0), 0);
-    const totalRevenue = list.reduce((s, n) => s + Number(n.revenue || 0), 0);
+    const orgList = draft.organic_channels;
+    const paidList = draft.paid_campaigns;
 
-    // Evaluar salud financiera de cada canal individualmente
-    const evaluatedChannels = list.map((ch) => {
-      const spend = Number(ch.ad_spend || 0);
-      const results = Number(ch.results_count || 0);
-      const rev = Number(ch.revenue || 0);
-      const visits = Number(ch.web_visits || 0);
+    // Totales Bloque A (Orgánico puro: 1 fila por canal, 0 duplicidades)
+    const totalFollowers = orgList.reduce((s, n) => s + Number(n.followers_total || 0), 0);
+    const totalOrganicGrowth = orgList.reduce((s, n) => s + Number(n.organic_growth_net || 0), 0);
+    const totalOrganicReach = orgList.reduce((s, n) => s + Number(n.organic_reach || 0), 0);
+    const totalWebVisits = orgList.reduce((s, n) => s + Number(n.web_visits || 0), 0);
+
+    // Totales Bloque B (Paid Media desglosado por objetivo)
+    const totalPaidReach = paidList.reduce((s, n) => s + Number(n.paid_reach || 0), 0);
+    const totalAdSpend = paidList.reduce((s, n) => s + Number(n.ad_spend || 0), 0);
+    const totalRevenue = paidList.reduce((s, n) => s + Number(n.revenue || 0), 0);
+
+    // Auditoría financiera de cada campaña Paid por objetivo
+    const evaluatedPaid = paidList.map((camp) => {
+      const spend = Number(camp.ad_spend || 0);
+      const results = Number(camp.results_count || 0);
+      const rev = Number(camp.revenue || 0);
 
       const cpa = spend > 0 && results > 0 ? spend / results : 0;
       const roas = spend > 0 && rev > 0 ? rev / spend : 0;
-      const convRate =
-        visits > 0 &&
-        results > 0 &&
-        (ch.objective_type === 'Ventas / Compras' || ch.objective_type === 'Mensajes / Leads')
-          ? (results / visits) * 100
-          : 0;
 
-      let verdict: 'ESCALAR' | 'OPTIMIZAR EMBUDO' | 'FUGA / CORTAR' | 'ORGÁNICO PURO' =
-        'ORGÁNICO PURO';
-      let reason = 'Genera tracción sin inversión publicitaria directa.';
+      let verdict: 'ESCALAR' | 'OPTIMIZAR' | 'FUGA / CORTAR' | 'SIN COSTE' = 'SIN COSTE';
+      let reason = 'Impulso sin coste asignado en esta línea.';
 
       if (spend > 0) {
         if (results === 0 && rev === 0) {
           verdict = 'FUGA / CORTAR';
-          reason = `Gasto de ${formatEur(spend)} sin conversiones ni resultados registrados.`;
+          reason = `Gasto de ${formatEur(spend)} con 0 resultados registrados.`;
         } else if (rev > 0 && roas < 1) {
           verdict = 'FUGA / CORTAR';
-          reason = `Pérdida directa: ROAS de ${roas.toFixed(2)}x (retorna menos de lo invertido).`;
+          reason = `Pérdida neta: ROAS ${roas.toFixed(2)}x (< 1.0x).`;
         } else if (
-          (ch.objective_type === 'Mensajes / Leads' || ch.objective_type === 'Ventas / Compras') &&
+          (camp.objective_type === 'Mensajes / Leads' ||
+            camp.objective_type === 'Ventas / Compras') &&
           draft.target_max_cpa > 0 &&
           cpa > draft.target_max_cpa
         ) {
           verdict = 'FUGA / CORTAR';
-          reason = `CPA de ${cpa.toFixed(2)} € supera el máximo rentable (${draft.target_max_cpa} €).`;
+          reason = `CPA de ${cpa.toFixed(2)} € supera límite rentable (${draft.target_max_cpa} €).`;
         } else if (
-          ch.objective_type === 'Tráfico Web' &&
-          visits >= 500 &&
-          results === 0 &&
-          rev === 0
+          camp.objective_type === 'Tráfico Web' &&
+          draft.target_max_cpa > 0 &&
+          cpa > draft.target_max_cpa
         ) {
-          verdict = 'OPTIMIZAR EMBUDO';
-          reason = 'Trae tráfico web pero falta medir o cerrar conversión final.';
+          verdict = 'FUGA / CORTAR';
+          reason = `CPC de ${cpa.toFixed(2)} € demasiado alto frente a umbral (${draft.target_max_cpa} €).`;
         } else if (
           (rev > 0 && roas >= draft.target_min_roas) ||
           (cpa > 0 && cpa <= draft.target_max_cpa)
@@ -698,31 +776,24 @@ export default function CeoProfitabilityReportPage() {
           verdict = 'ESCALAR';
           reason =
             rev > 0
-              ? `Alta rentabilidad: ROAS ${roas.toFixed(2)}x (supera meta ${draft.target_min_roas}x).`
-              : `Captación eficiente a ${cpa.toFixed(2)} €/${ch.result_unit_label.replace(/s$/, '')}.`;
+              ? `Rentable: ROAS ${roas.toFixed(2)}x (meta ${draft.target_min_roas}x).`
+              : `Coste eficiente: ${cpa.toFixed(2)} €/${camp.result_unit_label.replace(/s$/, '')}.`;
         } else {
-          verdict = 'OPTIMIZAR EMBUDO';
-          reason = 'Rentabilidad media; margen de mejora en segmentación o landing.';
+          verdict = 'OPTIMIZAR';
+          reason = 'Rentabilidad media; optimizar creatividad o segmentación.';
         }
-      } else if (visits < 100 && ch.organic_growth_net <= 0) {
-        verdict = 'OPTIMIZAR EMBUDO';
-        reason = 'Baja tracción orgánica y escaso tráfico derivado a la web.';
-      } else if (visits >= 500 || ch.organic_growth_net >= 200) {
-        verdict = 'ESCALAR';
-        reason = 'Motor orgánico sólido sin coste de adquisición.';
       }
 
       return {
-        ...ch,
+        ...camp,
         cpa,
         roas,
-        convRate,
         verdict,
         reason,
       };
     });
 
-    // Agrupación estricta de resultados e inversión por Objetivo
+    // Agrupación estricta por Objetivo (sin mezclar clics con mensajes o ventas)
     const byObjectiveMap = new Map<
       ObjectiveCategory,
       {
@@ -734,7 +805,7 @@ export default function CeoProfitabilityReportPage() {
       }
     >();
 
-    list.forEach((ch) => {
+    paidList.forEach((ch) => {
       const hasActivity = ch.results_count > 0 || ch.ad_spend > 0 || ch.revenue > 0;
       if (!hasActivity) return;
       const existing = byObjectiveMap.get(ch.objective_type);
@@ -759,130 +830,106 @@ export default function CeoProfitabilityReportPage() {
       roas: grp.totalSpend > 0 && grp.totalRevenue > 0 ? grp.totalRevenue / grp.totalSpend : 0,
     }));
 
-    // Identificar: 1) Qué es lo más rentable, 2) Dónde se pierde dinero, 3) Cuello de botella del embudo
-    const paidChannels = evaluatedChannels.filter((c) => c.ad_spend > 0);
-    const leakingChannels = evaluatedChannels.filter((c) => c.verdict === 'FUGA / CORTAR');
-    const wastedSpend = leakingChannels.reduce((s, c) => s + Number(c.ad_spend || 0), 0);
+    // Tarjetas ejecutivas CEO: Qué es rentable, Dónde se pierde dinero, Embudo
+    const activeSpendCampaigns = evaluatedPaid.filter((c) => c.ad_spend > 0);
+    const leakingCampaigns = evaluatedPaid.filter((c) => c.verdict === 'FUGA / CORTAR');
+    const wastedSpend = leakingCampaigns.reduce((s, c) => s + Number(c.ad_spend || 0), 0);
 
-    const bestProfitable =
-      [...paidChannels]
-        .filter((c) => c.verdict === 'ESCALAR')
-        .sort((a, b) => (b.roas || 1 / (b.cpa || 999)) - (a.roas || 1 / (a.cpa || 999)))[0] ||
-      [...evaluatedChannels].sort((a, b) => b.web_visits - a.web_visits)[0];
+    const bestPaid = [...activeSpendCampaigns]
+      .filter((c) => c.verdict === 'ESCALAR')
+      .sort((a, b) => (b.roas || 1 / (b.cpa || 999)) - (a.roas || 1 / (a.cpa || 999)))[0];
+
+    const bestOrganic = [...orgList].sort((a, b) => b.web_visits - a.web_visits)[0];
 
     let profitableTitle = 'Sin datos suficientes';
-    let profitableWhy = 'Introduce inversión y resultados para calcular el retorno.';
-    if (bestProfitable) {
-      profitableTitle = bestProfitable.name;
-      if (bestProfitable.ad_spend > 0) {
-        profitableWhy =
-          bestProfitable.roas > 0
-            ? `Genera ${formatEur(bestProfitable.revenue)} con ${formatEur(
-                bestProfitable.ad_spend
-              )} invertidos (ROAS ${bestProfitable.roas.toFixed(2)}x). Escalar presupuesto aquí.`
-            : `Consigue ${formatCompact(bestProfitable.results_count)} ${
-                bestProfitable.result_unit_label
-              } a ${bestProfitable.cpa.toFixed(2)} € cada uno (por debajo del límite de ${
-                draft.target_max_cpa
-              } €).`;
-      } else {
-        profitableWhy = `Aporta ${formatCompact(bestProfitable.web_visits)} visitas y +${formatCompact(
-          bestProfitable.organic_growth_net
-        )} seguidores con 0 € de gasto publicitario.`;
-      }
+    let profitableWhy = 'Carga campañas o canales para detectar el motor principal.';
+    if (bestPaid) {
+      profitableTitle = `${bestPaid.platform} (${bestPaid.campaign_label})`;
+      profitableWhy = bestPaid.reason;
+    } else if (bestOrganic) {
+      profitableTitle = `${bestOrganic.name} (Orgánico)`;
+      profitableWhy = `Genera ${formatCompact(bestOrganic.web_visits)} visitas web y +${formatCompact(
+        bestOrganic.organic_growth_net
+      )} seguidores a coste 0 €.`;
     }
 
-    let leakTitle = 'Sin fugas críticas detectadas';
+    let leakTitle = 'Sin fugas de presupuesto';
     let leakWhy =
-      paidChannels.length > 0
-        ? `Todos los canales activos operan dentro del CPA máximo rentable (${draft.target_max_cpa} €).`
-        : 'No hay inversión publicitaria activa cargada en este periodo.';
-    if (leakingChannels.length > 0) {
-      const worst = [...leakingChannels].sort((a, b) => b.ad_spend - a.ad_spend)[0];
-      leakTitle = `${worst.name} (${formatEur(wastedSpend)} en riesgo)`;
+      activeSpendCampaigns.length > 0
+        ? `Todas las campañas operan por debajo del CPA máximo (${draft.target_max_cpa} €).`
+        : 'Sin inversión publicitaria activa en este periodo.';
+    if (leakingCampaigns.length > 0) {
+      const worst = [...leakingCampaigns].sort((a, b) => b.ad_spend - a.ad_spend)[0];
+      leakTitle = `${worst.platform} · ${worst.campaign_label} (${formatEur(wastedSpend)} en riesgo)`;
       leakWhy = worst.reason;
     }
 
-    // Diagnóstico del embudo (Captación vs. Conversión)
-    const highTrafficLowConv = evaluatedChannels.find(
-      (c) => c.web_visits >= 1000 && c.results_count === 0 && c.revenue === 0
-    );
+    const totalLeadsOrSales = objectiveGroups
+      .filter(
+        (g) => g.objective === 'Mensajes / Leads' || g.objective === 'Ventas / Compras'
+      )
+      .reduce((s, g) => s + g.totalResults, 0);
+
     let funnelTitle = 'Embudo equilibrado';
-    let funnelWhy = 'El volumen de tráfico y las acciones de contacto/venta mantienen proporción.';
-    if (highTrafficLowConv) {
-      funnelTitle = `Fuga en Cierre Web (${highTrafficLowConv.name})`;
-      funnelWhy = `Llegan ${formatCompact(
-        highTrafficLowConv.web_visits
-      )} visitas pero no hay conversiones atribuidas: revisar página de destino o seguimiento UTM.`;
-    } else if (totalWebVisits < 500 && totalOrganicReach > 50000) {
-      funnelTitle = 'Fuga en Captación de Clics';
-      funnelWhy = `Mucho alcance (${formatCompact(
-        totalOrganicReach
-      )} imp.) pero solo ${formatCompact(
+    let funnelWhy = 'Buena conversión entre alcance, clics hacia web y contactos/ventas.';
+    if (totalWebVisits >= 2000 && totalLeadsOrSales === 0 && activeSpendCampaigns.length > 0) {
+      funnelTitle = 'Fuga en Cierre (Mucho tráfico, 0 leads/ventas)';
+      funnelWhy = `Se generan ${formatCompact(
         totalWebVisits
-      )} visitas web: faltan llamadas a la acción y enlaces directos.`;
+      )} visitas web pero sin conversiones finales registradas: revisar landing page.`;
+    } else if (totalLeadsOrSales > 0) {
+      funnelTitle = `Conversión Activa (${formatCompact(totalLeadsOrSales)} leads/ventas)`;
+      funnelWhy = `El embudo transforma tráfico en oportunidades comerciales reales.`;
     }
 
-    const maxCombinedImpact = Math.max(
-      ...list.map((n) => Number(n.organic_reach || 0) + Number(n.paid_reach_clicks || 0)),
-      1
-    );
-    const maxWebVisits = Math.max(...list.map((n) => Number(n.web_visits || 0)), 1);
-
+    // Donut de Comunidad (100% basado en Bloque A Orgánico -> cero duplicados)
     let startPct = 0;
-    const donut = list.map((n) => {
+    const donut = orgList.map((n) => {
       const pct =
         totalFollowers > 0
           ? (Number(n.followers_total || 0) / totalFollowers) * 100
-          : 100 / Math.max(list.length, 1);
+          : 100 / Math.max(orgList.length, 1);
       const item = { ...n, pct, start: startPct };
       startPct += pct;
       return item;
     });
 
-    // Diagnóstico Ejecutivo Automático centrado en Rentabilidad y Fugas
-    let generatedHeadline = `${draft.client_name}: `;
-    if (paidChannels.length > 0) {
-      generatedHeadline += `Inversión total de ${formatEur(totalAdSpend)} con ${
-        objectiveGroups.length > 0
-          ? objectiveGroups
-              .map(
-                (g) =>
-                  `${formatCompact(g.totalResults)} ${g.unit} (${
-                    g.cpr > 0 ? `${g.cpr.toFixed(2)} €/ud` : 'sin coste'
-                  })`
-              )
-              .join(' y ')
-          : '0 resultados registrados'
-      }. `;
-      if (leakingChannels.length > 0) {
-        generatedHeadline += `ALERTA DE FUGA: ${leakingChannels
-          .map((c) => c.name)
-          .join(', ')} concentra ${formatEur(
-          wastedSpend
-        )} con baja eficiencia (${leakingChannels[0].reason.toLowerCase()}). `;
-      } else if (bestProfitable) {
-        generatedHeadline += `LO MÁS RENTABLE: ${bestProfitable.name} lidera el retorno (${bestProfitable.reason.toLowerCase()}). `;
+    const maxOrgReach = Math.max(...orgList.map((n) => Number(n.organic_reach || 0)), 1);
+    const maxWebVisits = Math.max(...orgList.map((n) => Number(n.web_visits || 0)), 1);
+
+    // Diagnóstico Ejecutivo Automático
+    let generatedHeadline = `${draft.client_name}: Comunidad consolidada de ${formatCompact(
+      totalFollowers
+    )} seguidores (${
+      totalOrganicGrowth >= 0
+        ? `+${formatCompact(totalOrganicGrowth)}`
+        : formatCompact(totalOrganicGrowth)
+    } netos) y ${formatCompact(totalWebVisits)} visitas web orgánicas.`;
+
+    if (activeSpendCampaigns.length > 0) {
+      generatedHeadline += ` En publicidad de pago (${formatEur(totalAdSpend)} invertidos), desglose por objetivo: ${objectiveGroups
+        .map(
+          (g) =>
+            `${g.objective} → ${formatCompact(g.totalResults)} ${g.unit}${
+              g.cpr > 0 ? ` (${g.cpr.toFixed(2)} €/ud)` : ''
+            }`
+        )
+        .join(' · ')}.`;
+      if (leakingCampaigns.length > 0) {
+        generatedHeadline += ` ALERTA DE FUGA: ${leakingCampaigns
+          .map((c) => `${c.platform} (${c.campaign_label})`)
+          .join(', ')} requiere ajuste inmediato.`;
       }
-    } else {
-      generatedHeadline += `Comunidad de ${formatCompact(
-        totalFollowers
-      )} seguidores (+${formatCompact(
-        totalOrganicGrowth
-      )} netos) y ${formatCompact(
-        totalWebVisits
-      )} visitas web sin inversión en pauta. El principal motor de tráfico orgánico es ${
-        bestProfitable ? bestProfitable.name : 'redes sociales'
-      }.`;
     }
 
     return {
-      channels: evaluatedChannels,
+      orgList,
+      evaluatedPaid,
       totalFollowers,
       totalOrganicGrowth,
       totalOrganicReach,
-      totalPaid,
       totalWebVisits,
+      totalPaidReach,
       totalAdSpend,
       totalRevenue,
       objectiveGroups,
@@ -890,12 +937,12 @@ export default function CeoProfitabilityReportPage() {
       profitableWhy,
       leakTitle,
       leakWhy,
-      hasLeak: leakingChannels.length > 0,
+      hasLeak: leakingCampaigns.length > 0,
       funnelTitle,
       funnelWhy,
-      maxCombinedImpact,
-      maxWebVisits,
       donut,
+      maxOrgReach,
+      maxWebVisits,
       generatedHeadline,
     };
   }, [draft]);
@@ -957,16 +1004,16 @@ export default function CeoProfitabilityReportPage() {
             <button
               type="button"
               onClick={() =>
-                setDraft((prev) => ({ ...prev, show_financials: !prev.show_financials }))
+                setDraft((prev) => ({ ...prev, show_paid_section: !prev.show_paid_section }))
               }
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-bold text-slate-700 cursor-pointer"
             >
-              {draft.show_financials ? (
+              {draft.show_paid_section ? (
                 <ToggleRight className="w-4 h-4 text-emerald-600" />
               ) : (
                 <ToggleLeft className="w-4 h-4 text-slate-400" />
               )}
-              <span>Rentabilidad y Ads {draft.show_financials ? 'Activos' : 'Ocultos'}</span>
+              <span>Bloque Paid Ads {draft.show_paid_section ? 'Visible' : 'Oculto'}</span>
             </button>
 
             {toast && (
@@ -989,7 +1036,6 @@ export default function CeoProfitabilityReportPage() {
             <button
               type="button"
               onClick={handleExportJson}
-              title="Descargar archivo JSON de este cliente"
               className="inline-flex items-center gap-1 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
@@ -999,7 +1045,6 @@ export default function CeoProfitabilityReportPage() {
             <button
               type="button"
               onClick={() => jsonInputRef.current?.click()}
-              title="Cargar plantilla JSON de un cliente"
               className="inline-flex items-center gap-1 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 cursor-pointer"
             >
               <Upload className="w-3.5 h-3.5" />
@@ -1029,7 +1074,7 @@ export default function CeoProfitabilityReportPage() {
           <div className="no-print bg-white p-5 rounded-3xl border-2 border-[#015b9d] shadow-md space-y-3 text-xs">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
               <h2 className="text-sm font-black text-[#081b2b]">
-                Guía Rápida: Dónde sacar cada dato en las plataformas
+                Estructura Sin Duplicidades: Bloque A (Orgánico por Red) vs. Bloque B (Campañas por Objetivo)
               </h2>
               <button
                 type="button"
@@ -1064,7 +1109,7 @@ export default function CeoProfitabilityReportPage() {
         )}
 
         {/* ================================================================= */}
-        {/* EDITOR COMPLETO DE PLANTILLA MULTI-CLIENTE                        */}
+        {/* EDITOR COMPLETO DE PLANTILLA (BLOQUE A + BLOQUE B SEPARADOS)      */}
         {/* ================================================================= */}
         {editMode && (
           <form
@@ -1074,10 +1119,10 @@ export default function CeoProfitabilityReportPage() {
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
               <div>
                 <h2 className="text-sm font-black text-[#081b2b]">
-                  Configuración de Cliente, Umbrales de Rentabilidad y Datos · {selectedMonth}
+                  Editor de Plantilla · {selectedMonth}
                 </h2>
                 <p className="text-[11px] text-slate-500">
-                  Define el CPA Máximo Rentable y ROAS Objetivo del cliente para que el sistema detecte automáticamente fugas de dinero.
+                  Bloque A mide comunidades (1 fila por red, sin duplicar) · Bloque B mide campañas de pago desglosadas por objetivo.
                 </p>
               </div>
               <button
@@ -1089,10 +1134,10 @@ export default function CeoProfitabilityReportPage() {
               </button>
             </div>
 
-            {/* 1. IDENTIDAD DEL CLIENTE, UMBRALES FINANCIEROS Y LOGOTIPO */}
+            {/* 1. IDENTIDAD DEL CLIENTE, UMBRALES Y LOGO */}
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
               <div className="font-black uppercase text-[#015b9d]">
-                1. Identidad Visual, Logo y Umbrales de Rentabilidad del Cliente
+                1. Identidad Visual, Logo y Umbrales de Rentabilidad
               </div>
               <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
                 <div className="md:col-span-2">
@@ -1114,10 +1159,7 @@ export default function CeoProfitabilityReportPage() {
                   />
                 </div>
                 <div>
-                  <label
-                    className="block font-bold text-rose-700 mb-1"
-                    title="Coste máximo que puede costar un lead o venta antes de perder dinero"
-                  >
+                  <label className="block font-bold text-rose-700 mb-1">
                     CPA Máx. Rentable (€)
                   </label>
                   <input
@@ -1175,54 +1217,157 @@ export default function CeoProfitabilityReportPage() {
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-slate-200 space-y-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <label className="inline-flex items-center gap-2 font-extrabold text-[#081b2b] cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={draft.auto_diagnosis}
-                      onChange={(e) => setDraft({ ...draft, auto_diagnosis: e.target.checked })}
-                    />
-                    <Sparkles className="w-3.5 h-3.5 text-[#ed6723]" />
-                    <span>
-                      Diagnóstico Ejecutivo automático (detecta qué es rentable y dónde se pierde dinero)
-                    </span>
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-slate-500">Subtítulo marca:</span>
-                    <input
-                      type="text"
-                      value={draft.client_subtitle}
-                      onChange={(e) => setDraft({ ...draft, client_subtitle: e.target.value })}
-                      className="px-2 py-1 rounded border border-slate-300 bg-white text-[11px] font-semibold w-48"
-                    />
-                  </div>
-                </div>
-                {!draft.auto_diagnosis && (
-                  <textarea
-                    rows={2}
-                    value={draft.custom_headline}
-                    onChange={(e) => setDraft({ ...draft, custom_headline: e.target.value })}
-                    placeholder="Escribe el diagnóstico ejecutivo personalizado..."
-                    className="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-xs"
+              <div className="pt-2 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                <label className="inline-flex items-center gap-2 font-extrabold text-[#081b2b] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={draft.auto_diagnosis}
+                    onChange={(e) => setDraft({ ...draft, auto_diagnosis: e.target.checked })}
                   />
-                )}
+                  <Sparkles className="w-3.5 h-3.5 text-[#ed6723]" />
+                  <span>Generar Veredicto Ejecutivo automáticamente</span>
+                </label>
+                <input
+                  type="text"
+                  value={draft.client_subtitle}
+                  onChange={(e) => setDraft({ ...draft, client_subtitle: e.target.value })}
+                  placeholder="Subtítulo de marca"
+                  className="px-2 py-1 rounded border border-slate-300 bg-white text-[11px] font-semibold w-60"
+                />
               </div>
+              {!draft.auto_diagnosis && (
+                <textarea
+                  rows={2}
+                  value={draft.custom_headline}
+                  onChange={(e) => setDraft({ ...draft, custom_headline: e.target.value })}
+                  placeholder="Escribe el veredicto ejecutivo personalizado..."
+                  className="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-xs"
+                />
+              )}
             </div>
 
-            {/* 2. MATRIZ DINÁMICA DE CANALES, OBJETIVOS Y CONVERSIONES */}
+            {/* 2A. BLOQUE A: PRESENCIA ORGÁNICA POR CANAL (1 FILA POR RED -> CERO DUPLICIDAD) */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="font-black uppercase text-[#081b2b]">
-                  2. Canales, Objetivo de Campaña y Resultados Específicos
+                  2A. Presencia Orgánica por Canal (1 fila por red · sin duplicar comunidad)
                 </span>
                 <button
                   type="button"
-                  onClick={handleAddChannel}
+                  onClick={handleAddOrganic}
+                  className="inline-flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-black px-3.5 py-1.5 rounded-full cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Añadir Canal Orgánico</span>
+                </button>
+              </div>
+
+              <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-800 text-white text-[10px] font-extrabold uppercase">
+                      <th className="p-2">Color</th>
+                      <th className="p-2">Red / Fuente</th>
+                      <th className="p-2 text-right">Comunidad Total</th>
+                      <th className="p-2 text-right">Crec. Orgánico (+/-)</th>
+                      <th className="p-2 text-right">Alcance Orgánico</th>
+                      <th className="p-2 text-right">Visitas Web (Clics)</th>
+                      <th className="p-2 text-center">Quitar</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {draft.organic_channels.map((row) => (
+                      <tr key={row.id} className="hover:bg-slate-50">
+                        <td className="p-1.5 text-center">
+                          <input
+                            type="color"
+                            value={row.color}
+                            onChange={(e) => updateOrganicField(row.id, 'color', e.target.value)}
+                            className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent"
+                          />
+                        </td>
+                        <td className="p-1.5">
+                          <input
+                            type="text"
+                            value={row.name}
+                            onChange={(e) => updateOrganicField(row.id, 'name', e.target.value)}
+                            className="w-36 px-2 py-1 rounded border border-slate-300 font-black"
+                          />
+                        </td>
+                        <td className="p-1.5 text-right">
+                          <input
+                            type="number"
+                            value={row.followers_total}
+                            onChange={(e) =>
+                              updateOrganicField(row.id, 'followers_total', Number(e.target.value))
+                            }
+                            className="w-24 px-2 py-1 rounded border border-slate-300 text-right font-bold"
+                          />
+                        </td>
+                        <td className="p-1.5 text-right">
+                          <input
+                            type="number"
+                            value={row.organic_growth_net}
+                            onChange={(e) =>
+                              updateOrganicField(
+                                row.id,
+                                'organic_growth_net',
+                                Number(e.target.value)
+                              )
+                            }
+                            className="w-20 px-2 py-1 rounded border border-slate-300 text-right font-bold"
+                          />
+                        </td>
+                        <td className="p-1.5 text-right">
+                          <input
+                            type="number"
+                            value={row.organic_reach}
+                            onChange={(e) =>
+                              updateOrganicField(row.id, 'organic_reach', Number(e.target.value))
+                            }
+                            className="w-24 px-2 py-1 rounded border border-slate-300 text-right font-bold"
+                          />
+                        </td>
+                        <td className="p-1.5 text-right">
+                          <input
+                            type="number"
+                            value={row.web_visits}
+                            onChange={(e) =>
+                              updateOrganicField(row.id, 'web_visits', Number(e.target.value))
+                            }
+                            className="w-24 px-2 py-1 rounded border border-slate-300 text-right font-bold"
+                          />
+                        </td>
+                        <td className="p-1.5 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveOrganic(row.id)}
+                            disabled={draft.organic_channels.length <= 1}
+                            className="p-1 text-slate-400 hover:text-rose-600 disabled:opacity-30 cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4 mx-auto" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* 2B. BLOQUE B: CAMPAÑAS PAID MEDIA DESGLOSADAS POR OBJETIVO */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-black uppercase text-[#015b9d]">
+                  2B. Campañas de Pago (Paid Media) Desglosadas por Objetivo
+                </span>
+                <button
+                  type="button"
+                  onClick={handleAddPaid}
                   className="inline-flex items-center gap-1 bg-sky-50 hover:bg-sky-100 text-[#015b9d] border border-sky-200 font-black px-3.5 py-1.5 rounded-full cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Añadir Canal / Objetivo</span>
+                  <span>Añadir Campaña / Objetivo</span>
                 </button>
               </div>
 
@@ -1231,49 +1376,54 @@ export default function CeoProfitabilityReportPage() {
                   <thead>
                     <tr className="bg-black text-white text-[10px] font-extrabold uppercase">
                       <th className="p-2">Color</th>
-                      <th className="p-2">Canal / Campaña</th>
+                      <th className="p-2">Plataforma</th>
+                      <th className="p-2">Campaña / Grupo</th>
                       <th className="p-2">Objetivo (Meta)</th>
-                      <th className="p-2 text-right">Comunidad</th>
-                      <th className="p-2 text-right">Crec. Org.</th>
-                      <th className="p-2 text-right">Alcance Org.</th>
                       <th className="p-2 text-right">Alcance Paid</th>
-                      <th className="p-2 text-right">Visitas Web</th>
-                      {draft.show_financials && (
-                        <>
-                          <th className="p-2 text-right">Inversión (€)</th>
-                          <th className="p-2 text-right">Resultados</th>
-                          <th className="p-2">Unidad</th>
-                          <th className="p-2 text-right">Ingresos (€)</th>
-                        </>
-                      )}
+                      <th className="p-2 text-right">Inversión (€)</th>
+                      <th className="p-2 text-right">Resultados</th>
+                      <th className="p-2">Unidad</th>
+                      <th className="p-2 text-right">Ingresos (€)</th>
                       <th className="p-2 text-center">Quitar</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
-                    {draft.channels.map((row) => (
-                      <tr key={row.id} className="hover:bg-slate-50">
+                    {draft.paid_campaigns.map((camp) => (
+                      <tr key={camp.id} className="hover:bg-slate-50">
                         <td className="p-1.5 text-center">
                           <input
                             type="color"
-                            value={row.color}
-                            onChange={(e) => updateChannelField(row.id, 'color', e.target.value)}
+                            value={camp.color}
+                            onChange={(e) => updatePaidField(camp.id, 'color', e.target.value)}
                             className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent"
                           />
                         </td>
                         <td className="p-1.5">
                           <input
                             type="text"
-                            value={row.name}
-                            onChange={(e) => updateChannelField(row.id, 'name', e.target.value)}
-                            className="w-28 px-2 py-1 rounded border border-slate-300 font-black"
+                            value={camp.platform}
+                            onChange={(e) => updatePaidField(camp.id, 'platform', e.target.value)}
+                            placeholder="Facebook / Instagram"
+                            className="w-24 px-2 py-1 rounded border border-slate-300 font-black"
+                          />
+                        </td>
+                        <td className="p-1.5">
+                          <input
+                            type="text"
+                            value={camp.campaign_label}
+                            onChange={(e) =>
+                              updatePaidField(camp.id, 'campaign_label', e.target.value)
+                            }
+                            placeholder="Ej: Mensajes / Tráfico"
+                            className="w-32 px-2 py-1 rounded border border-slate-300 text-[11px] font-semibold"
                           />
                         </td>
                         <td className="p-1.5">
                           <select
-                            value={row.objective_type}
+                            value={camp.objective_type}
                             onChange={(e) =>
-                              updateChannelField(
-                                row.id,
+                              updatePaidField(
+                                camp.id,
                                 'objective_type',
                                 e.target.value as ObjectiveCategory
                               )
@@ -1289,9 +1439,9 @@ export default function CeoProfitabilityReportPage() {
                         <td className="p-1.5 text-right">
                           <input
                             type="number"
-                            value={row.followers_total}
+                            value={camp.paid_reach}
                             onChange={(e) =>
-                              updateChannelField(row.id, 'followers_total', Number(e.target.value))
+                              updatePaidField(camp.id, 'paid_reach', Number(e.target.value))
                             }
                             className="w-20 px-1.5 py-1 rounded border border-slate-300 text-right font-bold"
                           />
@@ -1299,107 +1449,50 @@ export default function CeoProfitabilityReportPage() {
                         <td className="p-1.5 text-right">
                           <input
                             type="number"
-                            value={row.organic_growth_net}
+                            step="any"
+                            value={camp.ad_spend}
                             onChange={(e) =>
-                              updateChannelField(
-                                row.id,
-                                'organic_growth_net',
-                                Number(e.target.value)
-                              )
+                              updatePaidField(camp.id, 'ad_spend', Number(e.target.value))
                             }
-                            className="w-16 px-1.5 py-1 rounded border border-slate-300 text-right font-bold"
+                            className="w-20 px-1.5 py-1 rounded border border-emerald-300 bg-emerald-50/50 text-right font-bold"
                           />
                         </td>
                         <td className="p-1.5 text-right">
                           <input
                             type="number"
-                            value={row.organic_reach}
+                            value={camp.results_count}
                             onChange={(e) =>
-                              updateChannelField(row.id, 'organic_reach', Number(e.target.value))
+                              updatePaidField(camp.id, 'results_count', Number(e.target.value))
                             }
-                            className="w-20 px-1.5 py-1 rounded border border-slate-300 text-right font-bold"
+                            className="w-20 px-1.5 py-1 rounded border border-emerald-300 bg-emerald-50/50 text-right font-bold"
+                          />
+                        </td>
+                        <td className="p-1.5">
+                          <input
+                            type="text"
+                            value={camp.result_unit_label}
+                            onChange={(e) =>
+                              updatePaidField(camp.id, 'result_unit_label', e.target.value)
+                            }
+                            className="w-20 px-1.5 py-1 rounded border border-slate-300 text-[11px] font-semibold"
                           />
                         </td>
                         <td className="p-1.5 text-right">
                           <input
                             type="number"
-                            value={row.paid_reach_clicks}
+                            step="any"
+                            value={camp.revenue}
                             onChange={(e) =>
-                              updateChannelField(
-                                row.id,
-                                'paid_reach_clicks',
-                                Number(e.target.value)
-                              )
+                              updatePaidField(camp.id, 'revenue', Number(e.target.value))
                             }
-                            className="w-20 px-1.5 py-1 rounded border border-slate-300 text-right font-bold"
+                            className="w-20 px-1.5 py-1 rounded border border-emerald-300 bg-emerald-50/50 text-right font-bold"
                           />
                         </td>
-                        <td className="p-1.5 text-right">
-                          <input
-                            type="number"
-                            value={row.web_visits}
-                            onChange={(e) =>
-                              updateChannelField(row.id, 'web_visits', Number(e.target.value))
-                            }
-                            className="w-20 px-1.5 py-1 rounded border border-slate-300 text-right font-bold"
-                          />
-                        </td>
-                        {draft.show_financials && (
-                          <>
-                            <td className="p-1.5 text-right">
-                              <input
-                                type="number"
-                                step="any"
-                                value={row.ad_spend}
-                                onChange={(e) =>
-                                  updateChannelField(row.id, 'ad_spend', Number(e.target.value))
-                                }
-                                className="w-20 px-1.5 py-1 rounded border border-emerald-300 bg-emerald-50/50 text-right font-bold"
-                              />
-                            </td>
-                            <td className="p-1.5 text-right">
-                              <input
-                                type="number"
-                                value={row.results_count}
-                                onChange={(e) =>
-                                  updateChannelField(
-                                    row.id,
-                                    'results_count',
-                                    Number(e.target.value)
-                                  )
-                                }
-                                className="w-20 px-1.5 py-1 rounded border border-emerald-300 bg-emerald-50/50 text-right font-bold"
-                              />
-                            </td>
-                            <td className="p-1.5">
-                              <input
-                                type="text"
-                                value={row.result_unit_label}
-                                onChange={(e) =>
-                                  updateChannelField(row.id, 'result_unit_label', e.target.value)
-                                }
-                                className="w-20 px-1.5 py-1 rounded border border-slate-300 text-[11px] font-semibold"
-                              />
-                            </td>
-                            <td className="p-1.5 text-right">
-                              <input
-                                type="number"
-                                step="any"
-                                value={row.revenue}
-                                onChange={(e) =>
-                                  updateChannelField(row.id, 'revenue', Number(e.target.value))
-                                }
-                                className="w-20 px-1.5 py-1 rounded border border-emerald-300 bg-emerald-50/50 text-right font-bold"
-                              />
-                            </td>
-                          </>
-                        )}
                         <td className="p-1.5 text-center">
                           <button
                             type="button"
-                            onClick={() => handleRemoveChannel(row.id)}
-                            disabled={draft.channels.length <= 1}
-                            className="p-1 text-slate-400 hover:text-rose-600 disabled:opacity-30 cursor-pointer"
+                            onClick={() => handleRemovePaid(camp.id)}
+                            className="p-1 text-slate-400 hover:text-rose-600 cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4 mx-auto" />
                           </button>
@@ -1411,21 +1504,20 @@ export default function CeoProfitabilityReportPage() {
               </div>
             </div>
 
-            {/* 3. MERCADOS EMISORES / SEGMENTOS EDITABLES */}
+            {/* 3. MERCADOS EMISORES / SEGMENTOS */}
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-black uppercase text-[#015b9d]">
-                  3. Mercados Emisores / Distribución Geográfica (Editable por Cliente)
+                  3. Mercados Emisores / Distribución Geográfica
                 </span>
                 <button
                   type="button"
                   onClick={handleAddMarket}
                   className="inline-flex items-center gap-1 text-[11px] font-black text-[#015b9d] hover:underline cursor-pointer"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Añadir Comparativa de Mercado
+                  <Plus className="w-3.5 h-3.5" /> Añadir Comparativa
                 </button>
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {draft.markets.map((mkt) => (
                   <div
@@ -1492,7 +1584,6 @@ export default function CeoProfitabilityReportPage() {
                   </div>
                 ))}
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-1">
                 <input
                   type="text"
@@ -1517,7 +1608,7 @@ export default function CeoProfitabilityReportPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="font-black text-[#081b2b] uppercase">
-                  4. Directivas Estratégicas, Objetivos y Resultados Esperados
+                  4. Directivas Estratégicas Recomendadas
                 </span>
                 <button
                   type="button"
@@ -1581,7 +1672,7 @@ export default function CeoProfitabilityReportPage() {
         )}
 
         {/* ===================================================================== */}
-        {/* DOCUMENTO EJECUTIVO VISUAL (A4 ONE-PAGER PARA DIRECCIÓN GENERAL)      */}
+        {/* DOCUMENTO EJECUTIVO VISUAL (A4 ONE-PAGER SIN DUPLICIDADES)            */}
         {/* ===================================================================== */}
         <div
           id="ceo-visual-report"
@@ -1620,7 +1711,7 @@ export default function CeoProfitabilityReportPage() {
           </div>
 
           <div className="p-5 sm:p-7 space-y-5">
-            {/* DIAGNÓSTICO EJECUTIVO AUTOGENERADO */}
+            {/* VEREDICTO EJECUTIVO AUTOGENERADO */}
             <div className="p-3.5 rounded-2xl bg-slate-900 text-slate-100 text-xs sm:text-sm leading-relaxed border-l-4 border-[#f5b514]">
               <strong className="text-[#f5b514] uppercase text-xs tracking-wider mr-1.5">
                 Veredicto Ejecutivo:
@@ -1628,7 +1719,7 @@ export default function CeoProfitabilityReportPage() {
               {activeHeadline}
             </div>
 
-            {/* NUEVO PANEL DE CONTROL PARA EL CEO: QUÉ ES RENTABLE, DÓNDE SE PIERDE DINERO Y POR QUÉ */}
+            {/* PANEL DE CONTROL FINANCIERO PARA EL CEO */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200 flex items-start gap-2.5">
                 <ShieldCheck className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" />
@@ -1740,13 +1831,13 @@ export default function CeoProfitabilityReportPage() {
               <div className="p-4 rounded-2xl bg-[#fafaf9] border border-slate-200 flex items-center justify-between">
                 <div>
                   <div className="text-[10px] font-black uppercase text-slate-500">
-                    Impulso Paid Media
+                    Alcance Paid Media
                   </div>
                   <div className="text-2xl sm:text-3xl font-black text-black mt-0.5">
-                    {formatCompact(summary.totalPaid)}
+                    {formatCompact(summary.totalPaidReach)}
                   </div>
                   <div className="text-[11px] text-slate-600 mt-0.5">
-                    Alcance / impactos patrocinados
+                    Inversión: {formatEur(summary.totalAdSpend)}
                   </div>
                 </div>
                 <div className="w-10 h-10 rounded-2xl bg-sky-100 text-[#015b9d] flex items-center justify-center shrink-0">
@@ -1772,79 +1863,38 @@ export default function CeoProfitabilityReportPage() {
               </div>
             </div>
 
-            {/* 1. MATRIZ DE RENTABILIDAD Y SEMÁFORO DE DECISIÓN POR CANAL */}
+            {/* 1A. TABLA ORGÁNICA POR CANAL (1 FILA POR RED -> CERO DUPLICIDADES) */}
             <div>
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                <h2 className="text-xs font-black uppercase tracking-wider text-black">
-                  1. Matriz de Rentabilidad y Decisión por Canal (CPA Máx: {draft.target_max_cpa}{' '}
-                  € · ROAS Meta: {draft.target_min_roas}x)
-                </h2>
-                <div className="flex items-center gap-3 text-[10px] font-bold">
-                  <span className="inline-flex items-center gap-1 text-emerald-700">
-                    <span className="w-2 h-2 rounded-full bg-emerald-600" /> Rentable / Escalar
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-amber-700">
-                    <span className="w-2 h-2 rounded-full bg-amber-500" /> Optimizar Embudo
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-rose-600">
-                    <span className="w-2 h-2 rounded-full bg-rose-600" /> Fuga / Pérdida
-                  </span>
-                </div>
-              </div>
-
+              <h2 className="text-xs font-black uppercase tracking-wider text-black mb-2">
+                1A. Rendimiento Orgánico y Comunidad por Canal ({summary.orgList.length} activos)
+              </h2>
               <div className="overflow-x-auto rounded-2xl border border-slate-300">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-slate-200/90 text-[#111827] text-[11px] font-black border-b border-slate-300">
-                      <th className="py-2.5 px-3 bg-slate-300/80">Canal / Campaña</th>
-                      <th className="py-2.5 px-2.5">Objetivo</th>
-                      <th className="py-2.5 px-2.5 text-center">Comunidad</th>
-                      <th className="py-2.5 px-2.5 text-center">Crec. Org.</th>
-                      <th className="py-2.5 px-2.5 text-center">Visitas Web</th>
-                      {draft.show_financials && (
-                        <>
-                          <th className="py-2.5 px-2.5 text-center">Inversión</th>
-                          <th className="py-2.5 px-2.5 text-center">Resultados / CPA</th>
-                        </>
-                      )}
-                      <th className="py-2.5 px-3 text-center">Veredicto CEO</th>
+                      <th className="py-2 px-3.5 bg-slate-300/80">Red / Canal</th>
+                      <th className="py-2 px-3 text-center">Comunidad Total</th>
+                      <th className="py-2 px-3 text-center">Crecimiento Orgánico</th>
+                      <th className="py-2 px-3 text-center">Alcance Orgánico</th>
+                      <th className="py-2 px-3 text-center">Visitas a la Web</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
-                    {summary.channels.map((net) => {
+                    {summary.orgList.map((net) => {
                       const orgPositive = net.organic_growth_net >= 50;
-                      const badgeStyle =
-                        net.verdict === 'ESCALAR'
-                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                          : net.verdict === 'FUGA / CORTAR'
-                            ? 'bg-rose-100 text-rose-800 border-rose-300'
-                            : net.verdict === 'OPTIMIZAR EMBUDO'
-                              ? 'bg-amber-100 text-amber-800 border-amber-300'
-                              : 'bg-slate-100 text-slate-700 border-slate-300';
                       return (
                         <tr key={net.id} className="hover:bg-slate-50">
-                          <td className="py-2.5 px-3 font-black bg-slate-100/80 text-[#081b2b]">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className="w-2.5 h-2.5 rounded-full shrink-0"
-                                style={{ backgroundColor: net.color }}
-                              />
-                              <span>{net.name}</span>
-                            </div>
+                          <td className="py-2 px-3.5 font-black bg-slate-100/80 text-[#081b2b] flex items-center gap-2">
+                            <span
+                              className="w-2.5 h-2.5 rounded-full shrink-0"
+                              style={{ backgroundColor: net.color }}
+                            />
+                            <span>{net.name}</span>
                           </td>
-
-                          <td className="py-2.5 px-2.5">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-700 border border-slate-200">
-                              <Target className="w-2.5 h-2.5 text-[#015b9d]" />
-                              {net.objective_type}
-                            </span>
-                          </td>
-
-                          <td className="py-2.5 px-2.5 text-center font-black text-slate-900">
+                          <td className="py-2 px-3 text-center font-black text-slate-900">
                             {net.followers_total > 0 ? formatCompact(net.followers_total) : '—'}
                           </td>
-
-                          <td className="py-2.5 px-2.5 text-center">
+                          <td className="py-2 px-3 text-center">
                             <span
                               className={`inline-flex items-center gap-1 font-black ${
                                 orgPositive ? 'text-emerald-600' : 'text-slate-600'
@@ -1860,88 +1910,30 @@ export default function CeoProfitabilityReportPage() {
                                 : formatCompact(net.organic_growth_net)}
                             </span>
                           </td>
-
-                          <td className="py-2.5 px-2.5 text-center font-black text-slate-900">
-                            {formatCompact(net.web_visits)}
-                            {net.convRate > 0 && (
-                              <div className="text-[10px] font-bold text-[#015b9d]">
-                                Conv: {net.convRate.toFixed(1)}%
-                              </div>
-                            )}
+                          <td className="py-2 px-3 text-center font-bold text-slate-800">
+                            {formatCompact(net.organic_reach)}
                           </td>
-
-                          {draft.show_financials && (
-                            <>
-                              <td className="py-2.5 px-2.5 text-center font-bold text-slate-800">
-                                {formatEur(net.ad_spend)}
-                              </td>
-                              <td className="py-2.5 px-2.5 text-center">
-                                <div className="font-black text-slate-900">
-                                  {formatCompact(net.results_count)}{' '}
-                                  <span className="text-[10px] font-bold text-slate-600">
-                                    {net.result_unit_label}
-                                  </span>
-                                  {net.revenue > 0 ? ` · ${formatEur(net.revenue)}` : ''}
-                                </div>
-                                {net.cpa > 0 && (
-                                  <div
-                                    className={`text-[10px] font-extrabold ${
-                                      net.cpa > draft.target_max_cpa
-                                        ? 'text-rose-600'
-                                        : 'text-emerald-700'
-                                    }`}
-                                  >
-                                    CPA: {net.cpa.toFixed(2)} €
-                                    {net.roas > 0 ? ` · ROAS ${net.roas.toFixed(2)}x` : ''}
-                                  </div>
-                                )}
-                              </td>
-                            </>
-                          )}
-
-                          <td className="py-2.5 px-3 text-center">
-                            <span
-                              className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-black border ${badgeStyle}`}
-                            >
-                              {net.verdict}
-                            </span>
-                            <div className="text-[9px] text-slate-500 mt-0.5 max-w-[170px] mx-auto leading-tight">
-                              {net.reason}
-                            </div>
+                          <td className="py-2 px-3 text-center font-black text-[#015b9d]">
+                            {formatCompact(net.web_visits)}
                           </td>
                         </tr>
                       );
                     })}
                     <tr className="bg-black text-white font-black">
-                      <td className="py-2.5 px-3 uppercase">TOTAL</td>
-                      <td className="py-2.5 px-2.5 text-[10px] text-slate-300">Por objetivo</td>
-                      <td className="py-2.5 px-2.5 text-center text-[#f5b514]">
+                      <td className="py-2 px-3.5 uppercase">TOTAL ORGÁNICO</td>
+                      <td className="py-2 px-3 text-center text-[#f5b514]">
                         {formatCompact(summary.totalFollowers)}
                       </td>
-                      <td className="py-2.5 px-2.5 text-center text-emerald-400">
+                      <td className="py-2 px-3 text-center text-emerald-400">
                         {summary.totalOrganicGrowth >= 0
                           ? `+${formatCompact(summary.totalOrganicGrowth)}`
                           : formatCompact(summary.totalOrganicGrowth)}
                       </td>
-                      <td className="py-2.5 px-2.5 text-center text-[#f5b514]">
-                        {formatCompact(summary.totalWebVisits)}
+                      <td className="py-2 px-3 text-center">
+                        {formatCompact(summary.totalOrganicReach)}
                       </td>
-                      {draft.show_financials && (
-                        <>
-                          <td className="py-2.5 px-2.5 text-center">
-                            {formatEur(summary.totalAdSpend)}
-                          </td>
-                          <td className="py-2.5 px-2.5 text-center text-emerald-400 text-[11px]">
-                            {summary.objectiveGroups.length > 0
-                              ? summary.objectiveGroups
-                                  .map((g) => `${formatCompact(g.totalResults)} ${g.unit}`)
-                                  .join(' + ')
-                              : '—'}
-                          </td>
-                        </>
-                      )}
-                      <td className="py-2.5 px-3 text-center text-[10px] text-[#f5b514]">
-                        {summary.hasLeak ? 'Corregir fugas' : 'Salud óptima'}
+                      <td className="py-2 px-3 text-center text-[#f5b514]">
+                        {formatCompact(summary.totalWebVisits)}
                       </td>
                     </tr>
                   </tbody>
@@ -1949,76 +1941,176 @@ export default function CeoProfitabilityReportPage() {
               </div>
             </div>
 
-            {/* DESGLOSE EJECUTIVO POR OBJETIVO DE CAMPAÑA */}
-            {draft.show_financials && summary.objectiveGroups.length > 0 && (
-              <div className="rounded-2xl bg-slate-900 text-white p-4 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs font-black uppercase text-[#f5b514]">
-                    <DollarSign className="w-4 h-4" />
-                    <span>Resultados e Inversión Agrupados por Objetivo de Campaña</span>
-                  </div>
-                  <span className="text-[11px] font-bold text-slate-300">
-                    Inversión Total:{' '}
-                    <strong className="text-white">{formatEur(summary.totalAdSpend)}</strong>
-                  </span>
+            {/* 1B. TABLA PAID MEDIA DESGLOSADA POR OBJETIVO (SIN MEZCLAR CLICS CON MENSAJES/VENTAS) */}
+            {draft.show_paid_section && summary.evaluatedPaid.length > 0 && (
+              <div className="space-y-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h2 className="text-xs font-black uppercase tracking-wider text-black">
+                    1B. Campañas Paid Media por Objetivo y Rentabilidad (CPA Máx:{' '}
+                    {draft.target_max_cpa} € · ROAS Meta: {draft.target_min_roas}x)
+                  </h2>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {summary.objectiveGroups.map((grp) => (
-                    <div
-                      key={grp.objective}
-                      className="p-3 rounded-xl bg-white/10 border border-white/15 flex items-center justify-between"
-                    >
-                      <div>
-                        <div className="text-[10px] font-black uppercase text-[#f5b514]">
-                          Objetivo: {grp.objective}
-                        </div>
-                        <div className="text-lg font-black text-white mt-0.5">
-                          {formatCompact(grp.totalResults)}{' '}
-                          <span className="text-xs font-bold text-slate-300">{grp.unit}</span>
-                        </div>
-                        <div className="text-[10px] text-slate-300">
-                          Inversión: {formatEur(grp.totalSpend)}
-                          {grp.totalRevenue > 0 ? ` · Ventas: ${formatEur(grp.totalRevenue)}` : ''}
-                        </div>
-                      </div>
-                      {grp.cpr > 0 && (
-                        <div className="text-right">
-                          <div className="text-[9px] uppercase text-slate-400">Coste / Unidad</div>
-                          <div className="text-sm font-black text-emerald-400">
-                            {grp.cpr.toFixed(2)} €
-                          </div>
-                        </div>
-                      )}
+
+                <div className="overflow-x-auto rounded-2xl border border-slate-300">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-slate-200/90 text-[#111827] text-[11px] font-black border-b border-slate-300">
+                        <th className="py-2 px-3 bg-slate-300/80">Plataforma · Campaña</th>
+                        <th className="py-2 px-2.5">Objetivo</th>
+                        <th className="py-2 px-2.5 text-center">Alcance Paid</th>
+                        <th className="py-2 px-2.5 text-center">Inversión</th>
+                        <th className="py-2 px-2.5 text-center">Resultados s/ Objetivo</th>
+                        <th className="py-2 px-2.5 text-center">Coste / Ud (CPA)</th>
+                        <th className="py-2 px-3 text-center">Veredicto CEO</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {summary.evaluatedPaid.map((camp) => {
+                        const badgeStyle =
+                          camp.verdict === 'ESCALAR'
+                            ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                            : camp.verdict === 'FUGA / CORTAR'
+                              ? 'bg-rose-100 text-rose-800 border-rose-300'
+                              : camp.verdict === 'OPTIMIZAR'
+                                ? 'bg-amber-100 text-amber-800 border-amber-300'
+                                : 'bg-slate-100 text-slate-700 border-slate-300';
+                        return (
+                          <tr key={camp.id} className="hover:bg-slate-50">
+                            <td className="py-2 px-3 bg-slate-100/80 text-[#081b2b]">
+                              <div className="flex items-center gap-2 font-black">
+                                <span
+                                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                                  style={{ backgroundColor: camp.color }}
+                                />
+                                <span>{camp.platform}</span>
+                              </div>
+                              <div className="text-[10px] text-slate-500 pl-4">
+                                {camp.campaign_label}
+                              </div>
+                            </td>
+                            <td className="py-2 px-2.5">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-700 border border-slate-200">
+                                <Target className="w-2.5 h-2.5 text-[#015b9d]" />
+                                {camp.objective_type}
+                              </span>
+                            </td>
+                            <td className="py-2 px-2.5 text-center font-bold text-slate-700">
+                              {formatCompact(camp.paid_reach)}
+                            </td>
+                            <td className="py-2 px-2.5 text-center font-black text-slate-900">
+                              {formatEur(camp.ad_spend)}
+                            </td>
+                            <td className="py-2 px-2.5 text-center font-black text-slate-900">
+                              {formatCompact(camp.results_count)}{' '}
+                              <span className="text-[10px] font-bold text-slate-600">
+                                {camp.result_unit_label}
+                              </span>
+                              {camp.revenue > 0 && (
+                                <div className="text-[10px] text-emerald-700">
+                                  Ventas: {formatEur(camp.revenue)}
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-2 px-2.5 text-center">
+                              {camp.cpa > 0 ? (
+                                <span
+                                  className={`font-black ${
+                                    camp.cpa > draft.target_max_cpa
+                                      ? 'text-rose-600'
+                                      : 'text-emerald-700'
+                                  }`}
+                                >
+                                  {camp.cpa.toFixed(2)} €
+                                </span>
+                              ) : (
+                                '—'
+                              )}
+                              {camp.roas > 0 && (
+                                <div className="text-[10px] font-bold text-slate-600">
+                                  ROAS: {camp.roas.toFixed(2)}x
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-2 px-3 text-center">
+                              <span
+                                className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-black border ${badgeStyle}`}
+                              >
+                                {camp.verdict}
+                              </span>
+                              <div className="text-[9px] text-slate-500 mt-0.5 max-w-[165px] mx-auto leading-tight">
+                                {camp.reason}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Resumen consolidado separado por Objetivo */}
+                {summary.objectiveGroups.length > 0 && (
+                  <div className="rounded-2xl bg-slate-900 text-white p-3.5 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-xs font-black uppercase text-[#f5b514]">
+                      <DollarSign className="w-4 h-4" />
+                      <span>Totales Separados por Objetivo ({formatEur(summary.totalAdSpend)} inv.):</span>
                     </div>
-                  ))}
-                </div>
+                    <div className="flex flex-wrap gap-3">
+                      {summary.objectiveGroups.map((grp) => (
+                        <div
+                          key={grp.objective}
+                          className="px-3 py-1.5 rounded-xl bg-white/10 border border-white/15 text-xs flex items-center gap-3"
+                        >
+                          <div>
+                            <span className="text-[10px] uppercase text-[#f5b514] font-black block">
+                              {grp.objective}
+                            </span>
+                            <span className="font-black">
+                              {formatCompact(grp.totalResults)} {grp.unit}
+                            </span>{' '}
+                            <span className="text-slate-300 text-[11px]">
+                              ({formatEur(grp.totalSpend)})
+                            </span>
+                          </div>
+                          {grp.cpr > 0 && (
+                            <div className="text-right border-l border-white/20 pl-2.5">
+                              <span className="text-[9px] uppercase text-slate-400 block">
+                                Coste/ud
+                              </span>
+                              <span className="font-black text-emerald-400">
+                                {grp.cpr.toFixed(2)} €
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* BLOQUE VISUAL: GRÁFICOS COMPARATIVOS Y MERCADOS EDITABLES */}
+            {/* BLOQUE VISUAL: GRÁFICOS COMPARATIVOS Y MERCADOS */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
               <div className="lg:col-span-7 p-4 rounded-2xl border border-slate-200 bg-[#fafaf9] space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-black uppercase text-black">
-                    2. Peso Visual: Alcance Orgánico vs. Paid Media y Visitas Web
+                    2. Peso Visual: Alcance Orgánico y Tráfico Web por Canal
                   </h3>
                   <div className="flex items-center gap-2 text-[10px] font-bold">
                     <span className="inline-flex items-center gap-1">
-                      <span className="w-2.5 h-2.5 rounded-xs bg-emerald-500" /> Orgánico
+                      <span className="w-2.5 h-2.5 rounded-xs bg-emerald-500" /> Alcance Orgánico
                     </span>
                     <span className="inline-flex items-center gap-1">
-                      <span className="w-2.5 h-2.5 rounded-xs bg-[#015b9d]" /> Paid Media
+                      <span className="w-2.5 h-2.5 rounded-xs bg-[#f5b514]" /> Visitas Web
                     </span>
                   </div>
                 </div>
 
                 <div className="space-y-2.5">
-                  {summary.channels.map((net) => {
+                  {summary.orgList.map((net) => {
                     const orgPct = Math.round(
-                      (Number(net.organic_reach || 0) / summary.maxCombinedImpact) * 100
-                    );
-                    const paidPct = Math.round(
-                      (Number(net.paid_reach_clicks || 0) / summary.maxCombinedImpact) * 100
+                      (Number(net.organic_reach || 0) / summary.maxOrgReach) * 100
                     );
                     const visitPct = Math.max(
                       4,
@@ -2038,42 +2130,25 @@ export default function CeoProfitabilityReportPage() {
                             {net.name}
                           </span>
                           <span className="text-slate-500">
-                            Impacto:{' '}
-                            <strong>
-                              {formatCompact(
-                                Number(net.organic_reach || 0) + Number(net.paid_reach_clicks || 0)
-                              )}
-                            </strong>{' '}
-                            · Web:{' '}
+                            Alcance: <strong>{formatCompact(net.organic_reach)}</strong> · Web:{' '}
                             <strong className="text-[#ed6723]">
                               {formatCompact(net.web_visits)} visitas
                             </strong>
                           </span>
                         </div>
-                        <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden flex">
+                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                           <div
-                            className="bg-emerald-500 h-full"
+                            className="bg-emerald-500 h-full rounded-full"
                             style={{
                               width: `${Math.max(orgPct, net.organic_reach > 0 ? 3 : 0)}%`,
                             }}
                           />
-                          <div
-                            className="bg-[#015b9d] h-full"
-                            style={{
-                              width: `${Math.max(paidPct, net.paid_reach_clicks > 0 ? 3 : 0)}%`,
-                            }}
-                          />
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[9px] font-bold text-slate-400 uppercase w-16 shrink-0">
-                            Tráfico Web
-                          </span>
-                          <div className="w-full h-1.5 bg-amber-100/70 rounded-full overflow-hidden">
-                            <div
-                              className="bg-[#f5b514] h-full rounded-full"
-                              style={{ width: `${visitPct}%` }}
-                            />
-                          </div>
+                        <div className="w-full h-1.5 bg-amber-100/70 rounded-full overflow-hidden">
+                          <div
+                            className="bg-[#f5b514] h-full rounded-full"
+                            style={{ width: `${visitPct}%` }}
+                          />
                         </div>
                       </div>
                     );
@@ -2086,7 +2161,7 @@ export default function CeoProfitabilityReportPage() {
                   <div className="flex items-center gap-1.5 mb-2">
                     <Globe className="w-4 h-4 text-[#015b9d]" />
                     <h3 className="text-xs font-black uppercase text-black">
-                      3. Cuota de Comunidad y Mercados Clave
+                      3. Cuota de Comunidad (Sin Duplicados) y Mercados
                     </h3>
                   </div>
 
