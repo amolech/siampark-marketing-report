@@ -33,6 +33,9 @@ import {
   Filter,
   CalendarRange,
   BarChart3,
+  Briefcase,
+  Clock,
+  Scale,
 } from 'lucide-react';
 
 export type ObjectiveCategory =
@@ -92,6 +95,13 @@ interface ClientTemplateReport {
   period_label: string;
   target_max_cpa: number;
   target_min_roas: number;
+  // Parámetros de Dirección General (Board-Level KPIs)
+  total_business_revenue: number; // Caja total del negocio (ej. TIMP / Taquilla) para MER
+  new_customers_acquired: number; // Clientes/altas/compras reales para CAC
+  customer_ltv: number; // Valor de vida del cliente (€) para LTV/CAC
+  gross_margin_pct: number; // Margen bruto (%) para ROAS Neto y Payback
+  avg_monthly_margin_per_customer: number; // Margen mensual (€) por cliente para Payback
+  // Comparativa Interanual (YoY)
   prev_year_web_visits: number;
   prev_year_revenue: number;
   auto_diagnosis: boolean;
@@ -108,7 +118,7 @@ interface ClientTemplateReport {
 const SIAM_LOGO_URL =
   'https://siampark.net/templates/yootheme/cache/d1/siam-park-tenerife-main-logo-d1ab9a93.webp';
 
-const STORAGE_KEY = 'agency_ceo_visual_kpis_v11';
+const STORAGE_KEY = 'agency_ceo_board_kpis_v12';
 
 const PRESET_COLORS = [
   '#0f172a',
@@ -131,13 +141,18 @@ const OBJECTIVE_UNIT_DEFAULTS: Record<ObjectiveCategory, string> = {
 
 const DEFAULT_SIAM_TEMPLATE: ClientTemplateReport = {
   client_name: 'SIAM PARK TENERIFE',
-  client_subtitle: 'THE WATER KINGDOM',
+  client_subtitle: 'THE WATER KINGDOM · BOARD EXECUTIVE REPORT',
   logo_data_url: SIAM_LOGO_URL,
   web_kpi_subtitle: 'Tráfico directo hacia web / taquilla',
   report_month: '2026-10',
   period_label: 'Octubre 2026 (01 – 31 Oct)',
   target_max_cpa: 15,
   target_min_roas: 4.0,
+  total_business_revenue: 68500,
+  new_customers_acquired: 735,
+  customer_ltv: 95,
+  gross_margin_pct: 72,
+  avg_monthly_margin_per_customer: 42,
   prev_year_web_visits: 4210,
   prev_year_revenue: 34500,
   auto_diagnosis: true,
@@ -271,13 +286,18 @@ const DEFAULT_SIAM_TEMPLATE: ClientTemplateReport = {
 
 const createBlankClientTemplate = (month: string): ClientTemplateReport => ({
   client_name: 'NUEVO CLIENTE',
-  client_subtitle: 'INFORME EJECUTIVO DE RENTABILIDAD Y MARKETING',
+  client_subtitle: 'INFORME DE DIRECCIÓN GENERAL · RENTABILIDAD Y CRECIMIENTO',
   logo_data_url: '',
   web_kpi_subtitle: 'Clics directos hacia web / contacto',
   report_month: month,
   period_label: `Cierre Mensual · ${month}`,
-  target_max_cpa: 5,
+  target_max_cpa: 10,
   target_min_roas: 3.0,
+  total_business_revenue: 8461.26,
+  new_customers_acquired: 48,
+  customer_ltv: 240,
+  gross_margin_pct: 65,
+  avg_monthly_margin_per_customer: 55,
   prev_year_web_visits: 0,
   prev_year_revenue: 0,
   auto_diagnosis: true,
@@ -371,32 +391,32 @@ const createBlankClientTemplate = (month: string): ClientTemplateReport => ({
 
 const DATA_SOURCES_GUIDE = [
   {
-    network: 'Bloque A: Orgánico y Web (1 fila/canal)',
-    color: '#e1306c',
-    organic: 'Meta Business / TikTok / YouTube / GA4 (Organic/Direct/Referral) sin duplicar comunidad.',
-    paid: 'No poner gasto aquí (va en el Bloque B).',
-    web: 'Clics en enlace o sesiones web del periodo.',
-  },
-  {
-    network: 'Bloque B: Campañas por Objetivo',
-    color: '#1877f2',
-    organic: '—',
-    paid: 'Meta Ads / Google Ads desglosado por Objetivo (Ventas, Mensajes, Tráfico).',
-    web: 'Introduce Ingresos (€) para que calcule ROAS y Ticket Medio automáticamente.',
-  },
-  {
-    network: 'Comparativa Interanual (YoY)',
+    network: 'MER y Caja Total (Contabilidad / TIMP)',
     color: '#0f172a',
-    organic: 'Visitas web del mismo mes del año anterior (ej. Oct 2025).',
-    paid: 'Facturación atribuida del mismo mes del año anterior.',
-    web: 'Permite al CEO medir crecimiento real eliminando la estacionalidad.',
+    organic: 'Facturación Total del Negocio (€) ÷ Inversión Publicitaria Total (€).',
+    paid: 'Evita el sesgo de cookies o ventas offline/taquilla midiendo la eficiencia global.',
+    web: 'Un MER > 5x en servicios/turismo indica salud financiera sólida.',
   },
   {
-    network: 'CTR y Cuota de Tráfico',
+    network: 'CAC Real y Ratio LTV / CAC',
     color: '#16a34a',
-    organic: 'CTR = Visitas Web ÷ Alcance Orgánico (% de interés real).',
-    paid: 'El gráfico Donut muestra el peso de cada canal en las visitas totales a la web.',
-    web: 'Evita el 0% en canales de buscador como Google SEO.',
+    organic: 'CAC = Gasto Ads ÷ Nuevos Clientes Captados en el mes.',
+    paid: 'LTV = Valor medio que deja un cliente durante toda su permanencia.',
+    web: 'Meta Dirección General: LTV / CAC ≥ 3.0x (cada euro captando genera 3€+).',
+  },
+  {
+    network: 'ROAS Neto y Payback Period',
+    color: '#015b9d',
+    organic: 'ROAS Neto = (Ingresos Atribuidos × Margen Bruto %) ÷ Gasto Ads.',
+    paid: 'Payback = CAC ÷ Margen Mensual por Cliente (meses en recuperar inversión).',
+    web: 'Mide liquidez y beneficio real tras descontar costes operativos.',
+  },
+  {
+    network: 'Conversión Embudo e Independencia',
+    color: '#e1306c',
+    organic: 'CR % = Nuevos Clientes ÷ Visitas Web Totales.',
+    paid: 'Detecta si el cuello de botella está en la web lenta o en recepción.',
+    web: 'Cuota Orgánica mide cuánta demanda entra gratis sin depender de anuncios.',
   },
 ];
 
@@ -419,7 +439,7 @@ function calcYoY(current: number, previous: number): number | null {
   return ((current - previous) / previous) * 100;
 }
 
-export default function CeoVisualKpiReportPage() {
+export default function CeoBoardLevelReportPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>('2026-10');
   const [reportsMap, setReportsMap] = useState<Record<string, ClientTemplateReport>>({
     '2026-10': DEFAULT_SIAM_TEMPLATE,
@@ -465,7 +485,7 @@ export default function CeoVisualKpiReportPage() {
     setLogoError(false);
     setDraft(createBlankClientTemplate(selectedMonth));
     setEditMode(true);
-    setToast('Plantilla en blanco lista para nuevo cliente');
+    setToast('Plantilla de Dirección General lista');
     setTimeout(() => setToast(null), 3000);
   };
 
@@ -493,7 +513,7 @@ export default function CeoVisualKpiReportPage() {
       // Ignorar
     }
     setEditMode(false);
-    setToast('Informe ejecutivo guardado');
+    setToast('Informe de Dirección General guardado');
     setTimeout(() => setToast(null), 3000);
   };
 
@@ -524,8 +544,13 @@ export default function CeoVisualKpiReportPage() {
         if (firstKey && imported[firstKey]) {
           setLogoError(false);
           setSelectedMonth(firstKey);
-          setDraft(imported[firstKey]);
-          const merged = { ...reportsMap, ...imported };
+          // Compatibilidad con JSONs anteriores sin campos Board-Level
+          const loaded = {
+            ...createBlankClientTemplate(firstKey),
+            ...imported[firstKey],
+          };
+          setDraft(loaded);
+          const merged = { ...reportsMap, [firstKey]: loaded };
           setReportsMap(merged);
           localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
           setToast('Plantilla de cliente cargada');
@@ -538,7 +563,7 @@ export default function CeoVisualKpiReportPage() {
     reader.readAsText(file);
   };
 
-  // CRUD Bloque A: Canales Orgánicos
+  // CRUD Bloque A
   const handleAddOrganic = () => {
     const nextColor = PRESET_COLORS[draft.organic_channels.length % PRESET_COLORS.length];
     setDraft((prev) => ({
@@ -579,7 +604,7 @@ export default function CeoVisualKpiReportPage() {
     }));
   };
 
-  // CRUD Bloque B: Campañas Paid por Objetivo
+  // CRUD Bloque B
   const handleAddPaid = () => {
     const nextColor = PRESET_COLORS[draft.paid_campaigns.length % PRESET_COLORS.length];
     setDraft((prev) => ({
@@ -705,7 +730,7 @@ export default function CeoVisualKpiReportPage() {
   };
 
   // =========================================================================
-  // MOTOR DE CÁLCULO EJECUTIVO Y VISUALIZACIÓN DE KPIs CLAROS
+  // MOTOR FINANCIERO DE DIRECCIÓN GENERAL (7 BOARD-LEVEL KPIs)
   // =========================================================================
   const summary = useMemo(() => {
     const orgList = draft.organic_channels;
@@ -718,15 +743,54 @@ export default function CeoVisualKpiReportPage() {
 
     const totalPaidReach = paidList.reduce((s, n) => s + Number(n.paid_reach || 0), 0);
     const totalAdSpend = paidList.reduce((s, n) => s + Number(n.ad_spend || 0), 0);
-    const totalRevenue = paidList.reduce((s, n) => s + Number(n.revenue || 0), 0);
+    const totalAttributedRevenue = paidList.reduce((s, n) => s + Number(n.revenue || 0), 0);
+
+    // 7 BOARD-LEVEL KPIs PARA EL CEO
+    const bizRevenue = Number(draft.total_business_revenue || 0) || totalAttributedRevenue;
+    const newCustomers = Number(draft.new_customers_acquired || 0);
+    const ltv = Number(draft.customer_ltv || 0);
+    const marginPct = Number(draft.gross_margin_pct || 0);
+    const monthlyMarginPerCust = Number(draft.avg_monthly_margin_per_customer || 0);
+
+    // 1. CAC Real (Coste Adquisición Cliente)
+    const realCac = totalAdSpend > 0 && newCustomers > 0 ? totalAdSpend / newCustomers : 0;
+
+    // 2. Ratio LTV / CAC
+    const ltvCacRatio = realCac > 0 && ltv > 0 ? ltv / realCac : 0;
+
+    // 3. MER (Marketing Efficiency Ratio = Facturación Total Negocio / Gasto Ads)
+    const merRatio = totalAdSpend > 0 && bizRevenue > 0 ? bizRevenue / totalAdSpend : 0;
+
+    // 4. ROAS Neto (Margen Contribución = (Ingresos Atribuidos * Margen%) / Gasto Ads)
+    const baseRevForRoas = totalAttributedRevenue > 0 ? totalAttributedRevenue : bizRevenue;
+    const netContribution = baseRevForRoas * (marginPct / 100);
+    const netRoas = totalAdSpend > 0 && netContribution > 0 ? netContribution / totalAdSpend : 0;
+
+    // 5. Payback Period (Meses para recuperar el CAC)
+    const paybackMonths =
+      realCac > 0 && monthlyMarginPerCust > 0 ? realCac / monthlyMarginPerCust : 0;
+
+    // 6. Tasa de Conversión del Embudo (Nuevos Clientes / Visitas Web Totales)
+    const funnelConvRate =
+      totalWebVisits > 0 && newCustomers > 0 ? (newCustomers / totalWebVisits) * 100 : 0;
+
+    // 7. Cuota de Demanda Orgánica vs. Pago (Visitas Orgánicas vs. Clics/Impulsos Paid)
+    const totalPaidTrafficClicks = paidList
+      .filter((p) => p.objective_type === 'Tráfico Web')
+      .reduce((s, p) => s + Number(p.results_count || 0), 0);
+    const organicSharePct =
+      totalWebVisits > 0
+        ? Math.max(0, Math.min(100, ((totalWebVisits - totalPaidTrafficClicks) / totalWebVisits) * 100))
+        : 100;
 
     const webVisitsYoY = calcYoY(totalWebVisits, Number(draft.prev_year_web_visits || 0));
-    const revenueYoY = calcYoY(totalRevenue, Number(draft.prev_year_revenue || 0));
+    const revenueYoY = calcYoY(bizRevenue, Number(draft.prev_year_revenue || 0));
 
-    // Enriquecer canales orgánicos con % de cuota web y CTR (Visitas / Alcance)
+    // Enriquecer canales orgánicos con cuota web y CTR
     const enrichedOrgList = [...orgList]
       .map((ch) => {
-        const webSharePct = totalWebVisits > 0 ? (Number(ch.web_visits || 0) / totalWebVisits) * 100 : 0;
+        const webSharePct =
+          totalWebVisits > 0 ? (Number(ch.web_visits || 0) / totalWebVisits) * 100 : 0;
         const ctrPct =
           Number(ch.organic_reach || 0) > 0
             ? (Number(ch.web_visits || 0) / Number(ch.organic_reach || 0)) * 100
@@ -838,7 +902,7 @@ export default function CeoVisualKpiReportPage() {
         grp.totalRevenue > 0 && grp.totalResults > 0 ? grp.totalRevenue / grp.totalResults : 0,
     }));
 
-    // Tarjetas ejecutivas CEO
+    // Tarjetas de Diagnóstico Ejecutivo
     const activeSpendCampaigns = evaluatedPaid.filter((c) => c.ad_spend > 0);
     const leakingCampaigns = evaluatedPaid.filter((c) => c.verdict === 'FUGA / CORTAR');
     const wastedSpend = leakingCampaigns.reduce((s, c) => s + Number(c.ad_spend || 0), 0);
@@ -872,32 +936,21 @@ export default function CeoVisualKpiReportPage() {
       leakWhy = worst.reason;
     }
 
-    const totalLeadsOrSales = objectiveGroups
-      .filter(
-        (g) => g.objective === 'Mensajes / Leads' || g.objective === 'Ventas / Compras'
-      )
-      .reduce((s, g) => s + g.totalResults, 0);
-
-    let funnelTitle = 'Embudo equilibrado';
-    let funnelWhy = 'Buena conversión entre alcance, clics hacia web y contactos/ventas.';
-    if (totalWebVisits >= 2000 && totalLeadsOrSales === 0 && activeSpendCampaigns.length > 0) {
-      funnelTitle = 'Fuga en Cierre (Mucho tráfico, 0 ventas/leads)';
-      funnelWhy = `Se generan ${formatCompact(
+    let funnelTitle = `Conversión Embudo: ${funnelConvRate.toFixed(2)}%`;
+    let funnelWhy =
+      newCustomers > 0
+        ? `De ${formatCompact(totalWebVisits)} visitas web se cerraron ${formatCompact(
+            newCustomers
+          )} clientes nuevos (CAC real: ${formatEur(realCac)}).`
+        : 'Registra los nuevos clientes captados en el editor para medir la tasa de cierre real.';
+    if (totalWebVisits >= 2000 && funnelConvRate > 0 && funnelConvRate < 0.8) {
+      funnelTitle = `Cuello de Botella en Cierre (${funnelConvRate.toFixed(2)}%)`;
+      funnelWhy = `Alto tráfico (${formatCompact(
         totalWebVisits
-      )} visitas web pero sin conversiones finales atribuidas: revisar pasarela de compra o UTM.`;
-    } else if (totalLeadsOrSales > 0) {
-      const globalTicket =
-        totalRevenue > 0 && totalLeadsOrSales > 0 ? totalRevenue / totalLeadsOrSales : 0;
-      funnelTitle = `Conversión Activa (${formatCompact(totalLeadsOrSales)} cierres)`;
-      funnelWhy =
-        globalTicket > 0
-          ? `Facturación atribuida de ${formatEur(totalRevenue)} con un ticket medio de ${formatEur(
-              globalTicket
-            )} por cliente.`
-          : `El embudo transforma tráfico en oportunidades comerciales reales.`;
+      )} visitas) pero baja conversión final: revisar velocidad web móvil o seguimiento comercial.`;
     }
 
-    // Donut de CUOTA DE TRÁFICO WEB (Todos los canales participan con su peso real, sin 0.0%)
+    // Donut de Cuota de Tráfico Web
     let startPct = 0;
     const webTrafficDonut = enrichedOrgList
       .filter((n) => n.web_visits > 0)
@@ -908,46 +961,36 @@ export default function CeoVisualKpiReportPage() {
         return item;
       });
 
-    // Máximo económico para el gráfico de Inversión vs. Caja Generada
     const maxFinancialBar = Math.max(
       ...activeSpendCampaigns.map((c) => Math.max(c.ad_spend, c.revenue)),
       1
     );
 
-    // Veredicto Ejecutivo Automático
-    let generatedHeadline = `${draft.client_name}: Comunidad de ${formatCompact(
-      totalFollowers
-    )} seguidores (${
-      totalOrganicGrowth >= 0
-        ? `+${formatCompact(totalOrganicGrowth)}`
-        : formatCompact(totalOrganicGrowth)
-    } netos) y ${formatCompact(totalWebVisits)} visitas web${
-      webVisitsYoY !== null
-        ? ` (${webVisitsYoY >= 0 ? `+${webVisitsYoY.toFixed(1)}%` : `${webVisitsYoY.toFixed(1)}%`} vs. año anterior)`
-        : ''
-    }.`;
+    // Veredicto Ejecutivo Automático orientado a Dirección General
+    let generatedHeadline = `${draft.client_name}: `;
+    if (totalAdSpend > 0 && bizRevenue > 0) {
+      generatedHeadline += `Facturación total de ${formatEur(bizRevenue)} con ${formatEur(
+        totalAdSpend
+      )} en publicidad (MER global: ${merRatio.toFixed(2)}x · ROAS Neto: ${netRoas.toFixed(2)}x). `;
+      if (realCac > 0) {
+        generatedHeadline += `Captamos ${formatCompact(
+          newCustomers
+        )} clientes nuevos a un CAC real de ${formatEur(realCac)}${
+          ltvCacRatio > 0 ? ` (Ratio LTV/CAC: ${ltvCacRatio.toFixed(1)}x` : ''
+        }${paybackMonths > 0 ? ` · Payback: ${paybackMonths.toFixed(1)} meses)` : ltvCacRatio > 0 ? ')' : ''}. `;
+      }
+    } else {
+      generatedHeadline += `Comunidad de ${formatCompact(
+        totalFollowers
+      )} seguidores (+${formatCompact(totalOrganicGrowth)} netos) y ${formatCompact(
+        totalWebVisits
+      )} visitas web (${organicSharePct.toFixed(0)}% demanda orgánica gratuita). `;
+    }
 
-    if (activeSpendCampaigns.length > 0) {
-      generatedHeadline += ` En publicidad de pago (${formatEur(totalAdSpend)} invertidos), desglose por objetivo: ${objectiveGroups
-        .map(
-          (g) =>
-            `${g.objective} → ${formatCompact(g.totalResults)} ${g.unit}${
-              g.cpr > 0 ? ` (CPA ${g.cpr.toFixed(2)} €` : ''
-            }${g.roas > 0 ? ` · ROAS ${g.roas.toFixed(2)}x` : ''}${
-              g.avgTicket > 0 ? ` · Ticket ${formatEur(g.avgTicket)}` : ''
-            }${g.cpr > 0 ? ')' : ''}`
-        )
-        .join(' · ')}.`;
-      if (revenueYoY !== null && totalRevenue > 0) {
-        generatedHeadline += ` La facturación atribuida crece ${
-          revenueYoY >= 0 ? `+${revenueYoY.toFixed(1)}%` : `${revenueYoY.toFixed(1)}%`
-        } interanual.`;
-      }
-      if (leakingCampaigns.length > 0) {
-        generatedHeadline += ` ALERTA DE FUGA: ${leakingCampaigns
-          .map((c) => `${c.platform} (${c.campaign_label})`)
-          .join(', ')} requiere ajuste inmediato.`;
-      }
+    if (leakingCampaigns.length > 0) {
+      generatedHeadline += `ALERTA DE FUGA: ${leakingCampaigns
+        .map((c) => `${c.platform} (${c.campaign_label})`)
+        .join(', ')} concentra ${formatEur(wastedSpend)} fuera de margen y requiere ajuste.`;
     }
 
     return {
@@ -962,8 +1005,17 @@ export default function CeoVisualKpiReportPage() {
       webVisitsYoY,
       totalPaidReach,
       totalAdSpend,
-      totalRevenue,
+      totalAttributedRevenue,
+      bizRevenue,
       revenueYoY,
+      newCustomers,
+      realCac,
+      ltvCacRatio,
+      merRatio,
+      netRoas,
+      paybackMonths,
+      funnelConvRate,
+      organicSharePct,
       objectiveGroups,
       profitableTitle,
       profitableWhy,
@@ -1029,7 +1081,7 @@ export default function CeoVisualKpiReportPage() {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-[#015b9d] border border-sky-200 text-xs font-extrabold cursor-pointer"
             >
               <HelpCircle className="w-3.5 h-3.5" />
-              <span>Guía Extracción</span>
+              <span>Diccionario KPIs CEO</span>
             </button>
 
             <button
@@ -1061,7 +1113,7 @@ export default function CeoVisualKpiReportPage() {
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#f5b514] hover:bg-[#ffcd02] text-[#081b2b] text-xs font-black cursor-pointer"
             >
               <Edit3 className="w-3.5 h-3.5" />
-              <span>{editMode ? 'Cerrar Editor' : 'Editar Cliente y Datos'}</span>
+              <span>{editMode ? 'Cerrar Editor' : 'Editar Datos y Finanzas'}</span>
             </button>
 
             <button
@@ -1100,12 +1152,12 @@ export default function CeoVisualKpiReportPage() {
           </div>
         </div>
 
-        {/* GUÍA INTERACTIVA DE EXTRACCIÓN */}
+        {/* DICCIONARIO DE KPIs DE DIRECCIÓN GENERAL */}
         {showGuide && (
           <div className="no-print bg-white p-5 rounded-3xl border-2 border-[#015b9d] shadow-md space-y-3 text-xs">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
               <h2 className="text-sm font-black text-[#081b2b]">
-                Guía Rápida: Estructura Ejecutiva con Comparativa Interanual (YoY) y Ticket Medio
+                Los 7 KPIs de Nivel Ejecutivo (Board-Level) que responde este informe
               </h2>
               <button
                 type="button"
@@ -1124,15 +1176,9 @@ export default function CeoVisualKpiReportPage() {
                   <div className="font-black text-xs uppercase" style={{ color: g.color }}>
                     {g.network}
                   </div>
-                  <p className="text-[11px] text-slate-700">
-                    <strong className="text-emerald-700">Orgánico:</strong> {g.organic}
-                  </p>
-                  <p className="text-[11px] text-slate-700">
-                    <strong className="text-[#015b9d]">Paid Media:</strong> {g.paid}
-                  </p>
-                  <p className="text-[11px] text-slate-700">
-                    <strong className="text-[#ed6723]">Web / Resultados:</strong> {g.web}
-                  </p>
+                  <p className="text-[11px] text-slate-700">{g.organic}</p>
+                  <p className="text-[11px] text-slate-700">{g.paid}</p>
+                  <p className="text-[11px] font-bold text-[#015b9d]">{g.web}</p>
                 </div>
               ))}
             </div>
@@ -1150,10 +1196,10 @@ export default function CeoVisualKpiReportPage() {
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
               <div>
                 <h2 className="text-sm font-black text-[#081b2b]">
-                  Editor de Plantilla Ejecutiva · {selectedMonth}
+                  Editor Ejecutivo y Parámetros Financieros del Negocio · {selectedMonth}
                 </h2>
                 <p className="text-[11px] text-slate-500">
-                  Introduce las cifras sin puntos de millar (ej. 38689). Añade los datos del año anterior para activar el cálculo interanual (YoY %).
+                  Introduce los datos de caja global y clientes nuevos para que el informe calcule MER, CAC Real, LTV/CAC, ROAS Neto y Payback.
                 </p>
               </div>
               <button
@@ -1165,10 +1211,10 @@ export default function CeoVisualKpiReportPage() {
               </button>
             </div>
 
-            {/* 1. IDENTIDAD DEL CLIENTE, UMBRALES Y COMPARATIVA AÑO ANTERIOR */}
+            {/* 1. IDENTIDAD DEL CLIENTE Y PARÁMETROS FINANCIEROS DE DIRECCIÓN */}
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
               <div className="font-black uppercase text-[#015b9d]">
-                1. Identidad Visual, Umbrales Rentables y Comparativa Año Anterior (YoY)
+                1A. Identidad del Cliente y Umbrales Operativos
               </div>
               <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
                 <div className="md:col-span-2">
@@ -1191,7 +1237,7 @@ export default function CeoVisualKpiReportPage() {
                 </div>
                 <div>
                   <label className="block font-bold text-rose-700 mb-1">
-                    CPA Máx. Rentable (€)
+                    CPA Máx. Campaña (€)
                   </label>
                   <input
                     type="number"
@@ -1248,6 +1294,93 @@ export default function CeoVisualKpiReportPage() {
                 </div>
               </div>
 
+              {/* Fila de Unit Economics para calcular MER, CAC Real, LTV/CAC, ROAS Neto y Payback */}
+              <div className="pt-2 border-t border-slate-200 space-y-2">
+                <div className="font-black uppercase text-emerald-800">
+                  1B. Unit Economics y Caja Global (Para calcular MER, CAC Real, LTV/CAC, ROAS Neto y Payback)
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Facturación Total Negocio (€)
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={draft.total_business_revenue}
+                      onChange={(e) =>
+                        setDraft({ ...draft, total_business_revenue: Number(e.target.value) })
+                      }
+                      placeholder="Ej: 8461.26 (TIMP)"
+                      className="w-full px-2.5 py-1.5 rounded-xl border border-emerald-300 bg-white font-black text-right"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Nuevos Clientes Reales
+                    </label>
+                    <input
+                      type="number"
+                      value={draft.new_customers_acquired}
+                      onChange={(e) =>
+                        setDraft({ ...draft, new_customers_acquired: Number(e.target.value) })
+                      }
+                      placeholder="Ej: 48 altas"
+                      className="w-full px-2.5 py-1.5 rounded-xl border border-emerald-300 bg-white font-black text-right"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      LTV por Cliente (€)
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={draft.customer_ltv}
+                      onChange={(e) =>
+                        setDraft({ ...draft, customer_ltv: Number(e.target.value) })
+                      }
+                      placeholder="Valor vida cliente"
+                      className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white font-bold text-right"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Margen Bruto (%)
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={draft.gross_margin_pct}
+                      onChange={(e) =>
+                        setDraft({ ...draft, gross_margin_pct: Number(e.target.value) })
+                      }
+                      placeholder="Ej: 65"
+                      className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white font-bold text-right"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Margen Mensual/Cliente (€)
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={draft.avg_monthly_margin_per_customer}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          avg_monthly_margin_per_customer: Number(e.target.value),
+                        })
+                      }
+                      placeholder="Para Payback"
+                      className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white font-bold text-right"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Comparativa YoY */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3 pt-2 border-t border-slate-200 items-end">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
@@ -1264,7 +1397,7 @@ export default function CeoVisualKpiReportPage() {
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
-                    Facturación Ads Año Anterior (€)
+                    Facturación Año Anterior (€)
                   </label>
                   <input
                     type="number"
@@ -1742,7 +1875,7 @@ export default function CeoVisualKpiReportPage() {
         )}
 
         {/* ===================================================================== */}
-        {/* DOCUMENTO EJECUTIVO VISUAL (A4 ONE-PAGER PARA DIRECCIÓN GENERAL)      */}
+        {/* DOCUMENTO EJECUTIVO VISUAL (A4 BOARD-LEVEL REPORT PARA DIRECCIÓN)     */}
         {/* ===================================================================== */}
         <div
           id="ceo-visual-report"
@@ -1773,14 +1906,14 @@ export default function CeoVisualKpiReportPage() {
           {/* Banda Negra Ejecutiva */}
           <div className="bg-black text-white px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <h1 className="text-sm sm:text-base font-black tracking-wide uppercase">
-              INFORME DE RENTABILIDAD Y MARKETING · {draft.client_name}
+              CUADRO DE MANDO DIRECCIÓN GENERAL · {draft.client_name}
             </h1>
             <div className="flex flex-wrap items-center gap-2">
               {(summary.webVisitsYoY !== null || summary.revenueYoY !== null) && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/15 text-white text-[11px] font-bold">
                   <CalendarRange className="w-3 h-3 text-[#f5b514]" />
                   {summary.revenueYoY !== null
-                    ? `Ventas YoY: ${summary.revenueYoY >= 0 ? '+' : ''}${summary.revenueYoY.toFixed(1)}%`
+                    ? `Caja YoY: ${summary.revenueYoY >= 0 ? '+' : ''}${summary.revenueYoY.toFixed(1)}%`
                     : `Web YoY: ${summary.webVisitsYoY! >= 0 ? '+' : ''}${summary.webVisitsYoY!.toFixed(1)}%`}
                 </span>
               )}
@@ -1794,12 +1927,131 @@ export default function CeoVisualKpiReportPage() {
             {/* VEREDICTO EJECUTIVO AUTOGENERADO */}
             <div className="p-3.5 rounded-2xl bg-slate-900 text-slate-100 text-xs sm:text-sm leading-relaxed border-l-4 border-[#f5b514]">
               <strong className="text-[#f5b514] uppercase text-xs tracking-wider mr-1.5">
-                Veredicto Ejecutivo:
+                Veredicto Dirección General:
               </strong>
               {activeHeadline}
             </div>
 
-            {/* PANEL DE CONTROL FINANCIERO PARA EL CEO */}
+            {/* ===================================================================== */}
+            {/* NUEVO BLOQUE BOARD-LEVEL: LOS 6 KPIs FINANCIEROS QUE EXIGE UN CEO     */}
+            {/* ===================================================================== */}
+            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 text-[11px] font-black uppercase text-[#081b2b]">
+                  <Briefcase className="w-4 h-4 text-[#015b9d]" />
+                  <span>Indicadores Financieros de Dirección General (Board-Level KPIs)</span>
+                </div>
+                <span className="text-[10px] font-bold text-slate-500">
+                  Caja Total Negocio: <strong className="text-black">{formatEur(summary.bizRevenue)}</strong> · Inversión Ads: <strong className="text-black">{formatEur(summary.totalAdSpend)}</strong>
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+                {/* 1. MER */}
+                <div className="p-3 rounded-xl bg-white border border-slate-200">
+                  <div className="text-[9px] font-black uppercase text-slate-500 flex items-center justify-between">
+                    <span>MER Global</span>
+                    <Scale className="w-3.5 h-3.5 text-[#015b9d]" />
+                  </div>
+                  <div className="text-xl font-black text-black mt-1">
+                    {summary.merRatio > 0 ? `${summary.merRatio.toFixed(2)}x` : '—'}
+                  </div>
+                  <div className="text-[10px] text-slate-500 leading-tight mt-0.5">
+                    Caja total ÷ Gasto Ads
+                  </div>
+                </div>
+
+                {/* 2. CAC Real */}
+                <div className="p-3 rounded-xl bg-white border border-slate-200">
+                  <div className="text-[9px] font-black uppercase text-slate-500">
+                    CAC Real Cliente
+                  </div>
+                  <div className="text-xl font-black text-black mt-1">
+                    {summary.realCac > 0 ? formatEur(summary.realCac) : '—'}
+                  </div>
+                  <div className="text-[10px] text-slate-500 leading-tight mt-0.5">
+                    {summary.newCustomers > 0
+                      ? `${formatCompact(summary.newCustomers)} clientes nuevos`
+                      : 'Sin altas cargadas'}
+                  </div>
+                </div>
+
+                {/* 3. Ratio LTV / CAC */}
+                <div className="p-3 rounded-xl bg-white border border-slate-200">
+                  <div className="text-[9px] font-black uppercase text-slate-500">
+                    Ratio LTV / CAC
+                  </div>
+                  <div
+                    className={`text-xl font-black mt-1 ${
+                      summary.ltvCacRatio >= 3
+                        ? 'text-emerald-700'
+                        : summary.ltvCacRatio > 0 && summary.ltvCacRatio < 1.5
+                          ? 'text-rose-600'
+                          : 'text-black'
+                    }`}
+                  >
+                    {summary.ltvCacRatio > 0 ? `${summary.ltvCacRatio.toFixed(1)}x` : '—'}
+                  </div>
+                  <div className="text-[10px] text-slate-500 leading-tight mt-0.5">
+                    {summary.ltvCacRatio >= 3
+                      ? 'Motor sano (Meta ≥3x)'
+                      : draft.customer_ltv > 0
+                        ? `LTV: ${formatEur(draft.customer_ltv)}`
+                        : 'Definir LTV'}
+                  </div>
+                </div>
+
+                {/* 4. ROAS Neto */}
+                <div className="p-3 rounded-xl bg-white border border-slate-200">
+                  <div className="text-[9px] font-black uppercase text-slate-500">
+                    ROAS Neto (Margen)
+                  </div>
+                  <div
+                    className={`text-xl font-black mt-1 ${
+                      summary.netRoas >= 2
+                        ? 'text-emerald-700'
+                        : summary.netRoas > 0 && summary.netRoas < 1
+                          ? 'text-rose-600'
+                          : 'text-black'
+                    }`}
+                  >
+                    {summary.netRoas > 0 ? `${summary.netRoas.toFixed(2)}x` : '—'}
+                  </div>
+                  <div className="text-[10px] text-slate-500 leading-tight mt-0.5">
+                    Margen bruto: {draft.gross_margin_pct}%
+                  </div>
+                </div>
+
+                {/* 5. Payback Period */}
+                <div className="p-3 rounded-xl bg-white border border-slate-200">
+                  <div className="text-[9px] font-black uppercase text-slate-500 flex items-center justify-between">
+                    <span>Payback CAC</span>
+                    <Clock className="w-3.5 h-3.5 text-amber-600" />
+                  </div>
+                  <div className="text-xl font-black text-black mt-1">
+                    {summary.paybackMonths > 0 ? `${summary.paybackMonths.toFixed(1)} m` : '—'}
+                  </div>
+                  <div className="text-[10px] text-slate-500 leading-tight mt-0.5">
+                    Meses recup. inversión
+                  </div>
+                </div>
+
+                {/* 6. Independencia Orgánica */}
+                <div className="p-3 rounded-xl bg-white border border-slate-200">
+                  <div className="text-[9px] font-black uppercase text-slate-500">
+                    Demanda Orgánica
+                  </div>
+                  <div className="text-xl font-black text-[#015b9d] mt-1">
+                    {summary.organicSharePct.toFixed(0)}%
+                  </div>
+                  <div className="text-[10px] text-slate-500 leading-tight mt-0.5">
+                    Tráfico sin pago Ads
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* PANEL DE CONTROL DE RENTABILIDAD Y FUGAS */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200 flex items-start gap-2.5">
                 <ShieldCheck className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" />
@@ -1857,7 +2109,7 @@ export default function CeoVisualKpiReportPage() {
                 <Filter className="w-5 h-5 text-[#ed6723] shrink-0 mt-0.5" />
                 <div>
                   <div className="text-[10px] font-black uppercase text-amber-900">
-                    Diagnóstico del Embudo y Ticket Medio
+                    Tasa de Cierre y Embudo
                   </div>
                   <div className="text-xs font-black text-amber-950 mt-0.5">
                     {summary.funnelTitle}
@@ -1869,14 +2121,14 @@ export default function CeoVisualKpiReportPage() {
               </div>
             </div>
 
-            {/* 4 TARJETAS KPI GLOBALES */}
+            {/* 4 TARJETAS DE TRACCIÓN OPERATIVA */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="p-4 rounded-2xl bg-[#fafaf9] border border-slate-200 flex items-center justify-between">
+              <div className="p-3.5 rounded-2xl bg-[#fafaf9] border border-slate-200 flex items-center justify-between">
                 <div>
                   <div className="text-[10px] font-black uppercase text-slate-500">
                     Comunidad Global
                   </div>
-                  <div className="text-2xl sm:text-3xl font-black text-black mt-0.5">
+                  <div className="text-2xl font-black text-black mt-0.5">
                     {formatCompact(summary.totalFollowers)}
                   </div>
                   <div className="text-[11px] font-extrabold text-emerald-700 mt-0.5">
@@ -1886,52 +2138,52 @@ export default function CeoVisualKpiReportPage() {
                     orgánicos/mes
                   </div>
                 </div>
-                <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                  <Users className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                  <Users className="w-4 h-4" />
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-[#fafaf9] border border-slate-200 flex items-center justify-between">
+              <div className="p-3.5 rounded-2xl bg-[#fafaf9] border border-slate-200 flex items-center justify-between">
                 <div>
                   <div className="text-[10px] font-black uppercase text-slate-500">
                     Alcance Orgánico
                   </div>
-                  <div className="text-2xl sm:text-3xl font-black text-black mt-0.5">
+                  <div className="text-2xl font-black text-black mt-0.5">
                     {formatCompact(summary.totalOrganicReach)}
                   </div>
                   <div className="text-[11px] text-slate-600 mt-0.5">
-                    Impactos sin coste publicitario
+                    Impactos sin coste ads
                   </div>
                 </div>
-                <div className="w-10 h-10 rounded-2xl bg-pink-100 text-[#e1306c] flex items-center justify-center shrink-0">
-                  <Eye className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-2xl bg-pink-100 text-[#e1306c] flex items-center justify-center shrink-0">
+                  <Eye className="w-4 h-4" />
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-[#fafaf9] border border-slate-200 flex items-center justify-between">
+              <div className="p-3.5 rounded-2xl bg-[#fafaf9] border border-slate-200 flex items-center justify-between">
                 <div>
                   <div className="text-[10px] font-black uppercase text-slate-500">
                     Alcance Paid Media
                   </div>
-                  <div className="text-2xl sm:text-3xl font-black text-black mt-0.5">
+                  <div className="text-2xl font-black text-black mt-0.5">
                     {formatCompact(summary.totalPaidReach)}
                   </div>
                   <div className="text-[11px] text-slate-600 mt-0.5">
-                    Inversión: {formatEur(summary.totalAdSpend)}
+                    Gasto: {formatEur(summary.totalAdSpend)}
                   </div>
                 </div>
-                <div className="w-10 h-10 rounded-2xl bg-sky-100 text-[#015b9d] flex items-center justify-center shrink-0">
-                  <Zap className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-2xl bg-sky-100 text-[#015b9d] flex items-center justify-center shrink-0">
+                  <Zap className="w-4 h-4" />
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-[#fafaf9] border border-slate-200 flex items-center justify-between">
+              <div className="p-3.5 rounded-2xl bg-[#fafaf9] border border-slate-200 flex items-center justify-between">
                 <div>
                   <div className="text-[10px] font-black uppercase text-slate-500">
                     Visitas a la Web
                   </div>
                   <div className="flex items-baseline gap-1.5 mt-0.5">
-                    <span className="text-2xl sm:text-3xl font-black text-black">
+                    <span className="text-2xl font-black text-black">
                       {formatCompact(summary.totalWebVisits)}
                     </span>
                     {summary.webVisitsYoY !== null && (
@@ -1953,8 +2205,8 @@ export default function CeoVisualKpiReportPage() {
                     {draft.web_kpi_subtitle}
                   </div>
                 </div>
-                <div className="w-10 h-10 rounded-2xl bg-amber-100 text-[#ed6723] flex items-center justify-center shrink-0">
-                  <MousePointerClick className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-2xl bg-amber-100 text-[#ed6723] flex items-center justify-center shrink-0">
+                  <MousePointerClick className="w-4 h-4" />
                 </div>
               </div>
             </div>
@@ -2156,8 +2408,8 @@ export default function CeoVisualKpiReportPage() {
                       <DollarSign className="w-4 h-4" />
                       <span>
                         Totales por Objetivo ({formatEur(summary.totalAdSpend)} inv.
-                        {summary.totalRevenue > 0
-                          ? ` · ${formatEur(summary.totalRevenue)} caja`
+                        {summary.totalAttributedRevenue > 0
+                          ? ` · ${formatEur(summary.totalAttributedRevenue)} atrib.`
                           : ''}
                         ):
                       </span>
@@ -2198,11 +2450,8 @@ export default function CeoVisualKpiReportPage() {
               </div>
             )}
 
-            {/* ===================================================================== */}
-            {/* BLOQUES 2 Y 3 REDISEÑADOS: CLARIDAD VISUAL PARA DIRECCIÓN GENERAL     */}
-            {/* ===================================================================== */}
+            {/* BLOQUES 2 Y 3: CLARIDAD VISUAL PARA DIRECCIÓN GENERAL */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-              {/* BLOQUE 2 (IZQUIERDA): EFICIENCIA DE TRÁFICO (CTR) + RETORNO FINANCIERO */}
               <div className="lg:col-span-7 p-4 rounded-2xl border border-slate-200 bg-[#fafaf9] flex flex-col justify-between gap-4">
                 <div className="space-y-2.5">
                   <div className="flex items-center justify-between">
@@ -2232,15 +2481,17 @@ export default function CeoVisualKpiReportPage() {
                                 style={{ backgroundColor: net.color }}
                               />
                               <span className="font-black text-[#081b2b]">{net.name}</span>
-                              <span
-                                className={`px-2 py-0.5 rounded-full text-[9px] font-black ${
-                                  highCtr
-                                    ? 'bg-emerald-100 text-emerald-800'
-                                    : 'bg-slate-100 text-slate-600'
-                                }`}
-                              >
-                                CTR: {net.ctrPct.toFixed(2)}%
-                              </span>
+                              {net.organic_reach > 0 && (
+                                <span
+                                  className={`px-2 py-0.5 rounded-full text-[9px] font-black ${
+                                    highCtr
+                                      ? 'bg-emerald-100 text-emerald-800'
+                                      : 'bg-slate-100 text-slate-600'
+                                  }`}
+                                >
+                                  CTR: {net.ctrPct.toFixed(2)}%
+                                </span>
+                              )}
                             </div>
                             <div className="text-right">
                               <strong className="text-[#081b2b] font-black">
@@ -2273,7 +2524,7 @@ export default function CeoVisualKpiReportPage() {
                     <div className="bg-white p-3 rounded-xl border border-slate-200/80 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-black uppercase text-[#081b2b]">
-                          Retorno Económico Paid: Inversión vs. Caja Generada
+                          Retorno Económico Paid: Inversión vs. Caja Atribuida
                         </span>
                         <div className="flex items-center gap-3 text-[10px] font-bold">
                           <span className="inline-flex items-center gap-1">
@@ -2332,7 +2583,6 @@ export default function CeoVisualKpiReportPage() {
                   )}
               </div>
 
-              {/* BLOQUE 3 (DERECHA): CUOTA DE TRÁFICO WEB (DONUT SIN 0%) Y MERCADOS SIN CORTES */}
               <div className="lg:col-span-5 p-4 rounded-2xl border border-slate-200 bg-[#fafaf9] flex flex-col justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-1.5 mb-2">
@@ -2342,7 +2592,6 @@ export default function CeoVisualKpiReportPage() {
                     </h3>
                   </div>
 
-                  {/* Donut de Visitas Web (Muestra el % real de aporte de cada canal) */}
                   <div className="bg-white p-3 rounded-xl border border-slate-200/80 flex items-center gap-4">
                     <div className="relative w-24 h-24 shrink-0">
                       <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
@@ -2389,7 +2638,6 @@ export default function CeoVisualKpiReportPage() {
                   </div>
                 </div>
 
-                {/* Mercados Emisores con layout apilado limpio (CERO textos cortados) */}
                 {draft.markets.length > 0 && (
                   <div className="bg-white p-3 rounded-xl border border-slate-200/80 space-y-2.5 text-[11px]">
                     <div className="font-black text-black uppercase text-[10px] tracking-wider">
