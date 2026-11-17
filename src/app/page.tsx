@@ -32,6 +32,7 @@ import {
   ShieldCheck,
   Filter,
   CalendarRange,
+  BarChart3,
 } from 'lucide-react';
 
 export type ObjectiveCategory =
@@ -91,7 +92,6 @@ interface ClientTemplateReport {
   period_label: string;
   target_max_cpa: number;
   target_min_roas: number;
-  // Comparativa Interanual (YoY)
   prev_year_web_visits: number;
   prev_year_revenue: number;
   auto_diagnosis: boolean;
@@ -108,7 +108,7 @@ interface ClientTemplateReport {
 const SIAM_LOGO_URL =
   'https://siampark.net/templates/yootheme/cache/d1/siam-park-tenerife-main-logo-d1ab9a93.webp';
 
-const STORAGE_KEY = 'agency_ceo_yoy_ticket_v10';
+const STORAGE_KEY = 'agency_ceo_visual_kpis_v11';
 
 const PRESET_COLORS = [
   '#0f172a',
@@ -392,11 +392,11 @@ const DATA_SOURCES_GUIDE = [
     web: 'Permite al CEO medir crecimiento real eliminando la estacionalidad.',
   },
   {
-    network: 'Ticket Medio y Márgenes',
+    network: 'CTR y Cuota de Tráfico',
     color: '#16a34a',
-    organic: 'Ticket Medio = Ingresos (€) ÷ Ventas/Entradas.',
-    paid: 'Diferencia canales que venden entradas básicas vs. paquetes VIP de alto margen.',
-    web: 'Valida que el CPA esté siempre por debajo del umbral rentable.',
+    organic: 'CTR = Visitas Web ÷ Alcance Orgánico (% de interés real).',
+    paid: 'El gráfico Donut muestra el peso de cada canal en las visitas totales a la web.',
+    web: 'Evita el 0% en canales de buscador como Google SEO.',
   },
 ];
 
@@ -419,7 +419,7 @@ function calcYoY(current: number, previous: number): number | null {
   return ((current - previous) / previous) * 100;
 }
 
-export default function CeoExecutiveYoyReportPage() {
+export default function CeoVisualKpiReportPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>('2026-10');
   const [reportsMap, setReportsMap] = useState<Record<string, ClientTemplateReport>>({
     '2026-10': DEFAULT_SIAM_TEMPLATE,
@@ -705,7 +705,7 @@ export default function CeoExecutiveYoyReportPage() {
   };
 
   // =========================================================================
-  // MOTOR DE CÁLCULO EJECUTIVO (YoY + TICKET MEDIO + RENTABILIDAD POR OBJETIVO)
+  // MOTOR DE CÁLCULO EJECUTIVO Y VISUALIZACIÓN DE KPIs CLAROS
   // =========================================================================
   const summary = useMemo(() => {
     const orgList = draft.organic_channels;
@@ -720,11 +720,26 @@ export default function CeoExecutiveYoyReportPage() {
     const totalAdSpend = paidList.reduce((s, n) => s + Number(n.ad_spend || 0), 0);
     const totalRevenue = paidList.reduce((s, n) => s + Number(n.revenue || 0), 0);
 
-    // Variación Interanual (YoY %)
     const webVisitsYoY = calcYoY(totalWebVisits, Number(draft.prev_year_web_visits || 0));
     const revenueYoY = calcYoY(totalRevenue, Number(draft.prev_year_revenue || 0));
 
-    // Auditoría financiera de cada campaña Paid (incluyendo Ticket Medio)
+    // Enriquecer canales orgánicos con % de cuota web y CTR (Visitas / Alcance)
+    const enrichedOrgList = [...orgList]
+      .map((ch) => {
+        const webSharePct = totalWebVisits > 0 ? (Number(ch.web_visits || 0) / totalWebVisits) * 100 : 0;
+        const ctrPct =
+          Number(ch.organic_reach || 0) > 0
+            ? (Number(ch.web_visits || 0) / Number(ch.organic_reach || 0)) * 100
+            : 0;
+        return {
+          ...ch,
+          webSharePct,
+          ctrPct,
+        };
+      })
+      .sort((a, b) => b.web_visits - a.web_visits);
+
+    // Auditoría financiera de cada campaña Paid
     const evaluatedPaid = paidList.map((camp) => {
       const spend = Number(camp.ad_spend || 0);
       const results = Number(camp.results_count || 0);
@@ -784,7 +799,7 @@ export default function CeoExecutiveYoyReportPage() {
       };
     });
 
-    // Agrupación estricta por Objetivo
+    // Agrupación por Objetivo
     const byObjectiveMap = new Map<
       ObjectiveCategory,
       {
@@ -832,7 +847,7 @@ export default function CeoExecutiveYoyReportPage() {
       .filter((c) => c.verdict === 'ESCALAR')
       .sort((a, b) => (b.roas || 1 / (b.cpa || 999)) - (a.roas || 1 / (a.cpa || 999)))[0];
 
-    const bestOrganic = [...orgList].sort((a, b) => b.web_visits - a.web_visits)[0];
+    const bestOrganic = enrichedOrgList[0];
 
     let profitableTitle = 'Sin datos suficientes';
     let profitableWhy = 'Carga campañas o canales para detectar el motor principal.';
@@ -841,9 +856,9 @@ export default function CeoExecutiveYoyReportPage() {
       profitableWhy = bestPaid.reason;
     } else if (bestOrganic) {
       profitableTitle = `${bestOrganic.name} (Orgánico)`;
-      profitableWhy = `Genera ${formatCompact(bestOrganic.web_visits)} visitas web y +${formatCompact(
-        bestOrganic.organic_growth_net
-      )} seguidores a coste 0 €.`;
+      profitableWhy = `Genera ${formatCompact(bestOrganic.web_visits)} visitas web (${bestOrganic.webSharePct.toFixed(
+        1
+      )}% del total) a coste 0 €.`;
     }
 
     let leakTitle = 'Sin fugas de presupuesto';
@@ -882,22 +897,24 @@ export default function CeoExecutiveYoyReportPage() {
           : `El embudo transforma tráfico en oportunidades comerciales reales.`;
     }
 
-    // Donut de Comunidad
+    // Donut de CUOTA DE TRÁFICO WEB (Todos los canales participan con su peso real, sin 0.0%)
     let startPct = 0;
-    const donut = orgList.map((n) => {
-      const pct =
-        totalFollowers > 0
-          ? (Number(n.followers_total || 0) / totalFollowers) * 100
-          : 100 / Math.max(orgList.length, 1);
-      const item = { ...n, pct, start: startPct };
-      startPct += pct;
-      return item;
-    });
+    const webTrafficDonut = enrichedOrgList
+      .filter((n) => n.web_visits > 0)
+      .map((n) => {
+        const pct = totalWebVisits > 0 ? (Number(n.web_visits || 0) / totalWebVisits) * 100 : 0;
+        const item = { ...n, pct, start: startPct };
+        startPct += pct;
+        return item;
+      });
 
-    const maxOrgReach = Math.max(...orgList.map((n) => Number(n.organic_reach || 0)), 1);
-    const maxWebVisits = Math.max(...orgList.map((n) => Number(n.web_visits || 0)), 1);
+    // Máximo económico para el gráfico de Inversión vs. Caja Generada
+    const maxFinancialBar = Math.max(
+      ...activeSpendCampaigns.map((c) => Math.max(c.ad_spend, c.revenue)),
+      1
+    );
 
-    // Veredicto Ejecutivo Automático con YoY y Ticket Medio
+    // Veredicto Ejecutivo Automático
     let generatedHeadline = `${draft.client_name}: Comunidad de ${formatCompact(
       totalFollowers
     )} seguidores (${
@@ -935,7 +952,9 @@ export default function CeoExecutiveYoyReportPage() {
 
     return {
       orgList,
+      enrichedOrgList,
       evaluatedPaid,
+      activeSpendCampaigns,
       totalFollowers,
       totalOrganicGrowth,
       totalOrganicReach,
@@ -953,9 +972,8 @@ export default function CeoExecutiveYoyReportPage() {
       hasLeak: leakingCampaigns.length > 0,
       funnelTitle,
       funnelWhy,
-      donut,
-      maxOrgReach,
-      maxWebVisits,
+      webTrafficDonut,
+      maxFinancialBar,
       generatedHeadline,
     };
   }, [draft]);
@@ -1147,7 +1165,7 @@ export default function CeoExecutiveYoyReportPage() {
               </button>
             </div>
 
-            {/* 1. IDENTIDAD DEL CLIENTE, UMBRALES Y COMPARATIVA AÑO ANTERIOR (YoY) */}
+            {/* 1. IDENTIDAD DEL CLIENTE, UMBRALES Y COMPARATIVA AÑO ANTERIOR */}
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
               <div className="font-black uppercase text-[#015b9d]">
                 1. Identidad Visual, Umbrales Rentables y Comparativa Año Anterior (YoY)
@@ -1230,7 +1248,6 @@ export default function CeoExecutiveYoyReportPage() {
                 </div>
               </div>
 
-              {/* Fila de Benchmark Interanual (Mismo mes del año pasado) */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3 pt-2 border-t border-slate-200 items-end">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
@@ -1242,7 +1259,6 @@ export default function CeoExecutiveYoyReportPage() {
                     onChange={(e) =>
                       setDraft({ ...draft, prev_year_web_visits: Number(e.target.value) })
                     }
-                    placeholder="Ej: 4210 (0 si no hay)"
                     className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white font-bold text-right"
                   />
                 </div>
@@ -1257,7 +1273,6 @@ export default function CeoExecutiveYoyReportPage() {
                     onChange={(e) =>
                       setDraft({ ...draft, prev_year_revenue: Number(e.target.value) })
                     }
-                    placeholder="Ej: 34500 (0 si no hay)"
                     className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white font-bold text-right"
                   />
                 </div>
@@ -1289,9 +1304,7 @@ export default function CeoExecutiveYoyReportPage() {
                     onChange={(e) => setDraft({ ...draft, auto_diagnosis: e.target.checked })}
                   />
                   <Sparkles className="w-3.5 h-3.5 text-[#ed6723]" />
-                  <span>
-                    Generar Veredicto Ejecutivo automáticamente (incluyendo YoY % y Ticket Medio)
-                  </span>
+                  <span>Generar Veredicto Ejecutivo automáticamente</span>
                 </label>
               </div>
               {!draft.auto_diagnosis && (
@@ -1309,7 +1322,7 @@ export default function CeoExecutiveYoyReportPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="font-black uppercase text-[#081b2b]">
-                  2A. Presencia Orgánica por Canal (1 fila por red · sin duplicar comunidad)
+                  2A. Presencia Orgánica y Tráfico Web por Canal
                 </span>
                 <button
                   type="button"
@@ -1329,7 +1342,7 @@ export default function CeoExecutiveYoyReportPage() {
                       <th className="p-2">Red / Fuente</th>
                       <th className="p-2 text-right">Comunidad Total</th>
                       <th className="p-2 text-right">Crec. Orgánico (+/-)</th>
-                      <th className="p-2 text-right">Alcance Orgánico</th>
+                      <th className="p-2 text-right">Alcance / Impresiones</th>
                       <th className="p-2 text-right">Visitas Web (Clics)</th>
                       <th className="p-2 text-center">Quitar</th>
                     </tr>
@@ -1350,7 +1363,7 @@ export default function CeoExecutiveYoyReportPage() {
                             type="text"
                             value={row.name}
                             onChange={(e) => updateOrganicField(row.id, 'name', e.target.value)}
-                            className="w-36 px-2 py-1 rounded border border-slate-300 font-black"
+                            className="w-40 px-2 py-1 rounded border border-slate-300 font-black"
                           />
                         </td>
                         <td className="p-1.5 text-right">
@@ -1462,7 +1475,7 @@ export default function CeoExecutiveYoyReportPage() {
                             type="text"
                             value={camp.platform}
                             onChange={(e) => updatePaidField(camp.id, 'platform', e.target.value)}
-                            className="w-24 px-2 py-1 rounded border border-slate-300 font-black"
+                            className="w-28 px-2 py-1 rounded border border-slate-300 font-black"
                           />
                         </td>
                         <td className="p-1.5">
@@ -1472,7 +1485,7 @@ export default function CeoExecutiveYoyReportPage() {
                             onChange={(e) =>
                               updatePaidField(camp.id, 'campaign_label', e.target.value)
                             }
-                            className="w-32 px-2 py-1 rounded border border-slate-300 text-[11px] font-semibold"
+                            className="w-36 px-2 py-1 rounded border border-slate-300 text-[11px] font-semibold"
                           />
                         </td>
                         <td className="p-1.5">
@@ -1958,7 +1971,7 @@ export default function CeoExecutiveYoyReportPage() {
                       <th className="py-2 px-3.5 bg-slate-300/80">Red / Canal</th>
                       <th className="py-2 px-3 text-center">Comunidad Total</th>
                       <th className="py-2 px-3 text-center">Crecimiento Orgánico</th>
-                      <th className="py-2 px-3 text-center">Alcance Orgánico</th>
+                      <th className="py-2 px-3 text-center">Alcance / Impresiones</th>
                       <th className="py-2 px-3 text-center">Visitas a la Web</th>
                     </tr>
                   </thead>
@@ -2185,85 +2198,155 @@ export default function CeoExecutiveYoyReportPage() {
               </div>
             )}
 
-            {/* BLOQUE VISUAL: GRÁFICOS COMPARATIVOS Y MERCADOS */}
+            {/* ===================================================================== */}
+            {/* BLOQUES 2 Y 3 REDISEÑADOS: CLARIDAD VISUAL PARA DIRECCIÓN GENERAL     */}
+            {/* ===================================================================== */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-              <div className="lg:col-span-7 p-4 rounded-2xl border border-slate-200 bg-[#fafaf9] space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-black uppercase text-black">
-                    2. Peso Visual: Alcance Orgánico y Tráfico Web por Canal
-                  </h3>
-                  <div className="flex items-center gap-2 text-[10px] font-bold">
-                    <span className="inline-flex items-center gap-1">
-                      <span className="w-2.5 h-2.5 rounded-xs bg-emerald-500" /> Alcance Orgánico
+              {/* BLOQUE 2 (IZQUIERDA): EFICIENCIA DE TRÁFICO (CTR) + RETORNO FINANCIERO */}
+              <div className="lg:col-span-7 p-4 rounded-2xl border border-slate-200 bg-[#fafaf9] flex flex-col justify-between gap-4">
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <BarChart3 className="w-4 h-4 text-[#015b9d]" />
+                      <h3 className="text-xs font-black uppercase text-black">
+                        2. Calidad de Captación Web y CTR por Canal
+                      </h3>
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-500">
+                      CTR = % de impresiones que van a la web
                     </span>
-                    <span className="inline-flex items-center gap-1">
-                      <span className="w-2.5 h-2.5 rounded-xs bg-[#f5b514]" /> Visitas Web
-                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {summary.enrichedOrgList.map((net) => {
+                      const highCtr = net.ctrPct >= 3.5;
+                      return (
+                        <div
+                          key={net.id}
+                          className="bg-white p-2.5 rounded-xl border border-slate-200/80 space-y-1.5"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="w-2.5 h-2.5 rounded-full shrink-0"
+                                style={{ backgroundColor: net.color }}
+                              />
+                              <span className="font-black text-[#081b2b]">{net.name}</span>
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[9px] font-black ${
+                                  highCtr
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : 'bg-slate-100 text-slate-600'
+                                }`}
+                              >
+                                CTR: {net.ctrPct.toFixed(2)}%
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <strong className="text-[#081b2b] font-black">
+                                {formatCompact(net.web_visits)} visitas
+                              </strong>{' '}
+                              <span className="text-slate-400 font-bold">
+                                ({net.webSharePct.toFixed(1)}% del total)
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all"
+                              style={{
+                                width: `${Math.max(net.webSharePct, net.web_visits > 0 ? 4 : 0)}%`,
+                                backgroundColor: net.color,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
-                <div className="space-y-2.5">
-                  {summary.orgList.map((net) => {
-                    const orgPct = Math.round(
-                      (Number(net.organic_reach || 0) / summary.maxOrgReach) * 100
-                    );
-                    const visitPct = Math.max(
-                      4,
-                      Math.round((Number(net.web_visits || 0) / summary.maxWebVisits) * 100)
-                    );
-                    return (
-                      <div
-                        key={net.id}
-                        className="bg-white p-2.5 rounded-xl border border-slate-200/80 space-y-1.5"
-                      >
-                        <div className="flex justify-between text-[11px]">
-                          <span className="font-black text-[#081b2b] flex items-center gap-1.5">
-                            <span
-                              className="w-2 h-2 rounded-full"
-                              style={{ backgroundColor: net.color }}
-                            />
-                            {net.name}
+                {/* Gráfico Comparativo de Dinero Real: Inversión vs. Caja Generada */}
+                {draft.show_paid_section &&
+                  summary.activeSpendCampaigns.some((c) => c.revenue > 0) && (
+                    <div className="bg-white p-3 rounded-xl border border-slate-200/80 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-black uppercase text-[#081b2b]">
+                          Retorno Económico Paid: Inversión vs. Caja Generada
+                        </span>
+                        <div className="flex items-center gap-3 text-[10px] font-bold">
+                          <span className="inline-flex items-center gap-1">
+                            <span className="w-2.5 h-2.5 rounded-xs bg-rose-500" /> Gasto Ads
                           </span>
-                          <span className="text-slate-500">
-                            Alcance: <strong>{formatCompact(net.organic_reach)}</strong> · Web:{' '}
-                            <strong className="text-[#ed6723]">
-                              {formatCompact(net.web_visits)} visitas
-                            </strong>
+                          <span className="inline-flex items-center gap-1">
+                            <span className="w-2.5 h-2.5 rounded-xs bg-emerald-500" /> Caja (€)
                           </span>
-                        </div>
-                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                          <div
-                            className="bg-emerald-500 h-full rounded-full"
-                            style={{
-                              width: `${Math.max(orgPct, net.organic_reach > 0 ? 3 : 0)}%`,
-                            }}
-                          />
-                        </div>
-                        <div className="w-full h-1.5 bg-amber-100/70 rounded-full overflow-hidden">
-                          <div
-                            className="bg-[#f5b514] h-full rounded-full"
-                            style={{ width: `${visitPct}%` }}
-                          />
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+
+                      <div className="space-y-2">
+                        {summary.activeSpendCampaigns.map((camp) => {
+                          const spendPct = Math.max(
+                            3,
+                            Math.round((camp.ad_spend / summary.maxFinancialBar) * 100)
+                          );
+                          const revPct = Math.round(
+                            (camp.revenue / summary.maxFinancialBar) * 100
+                          );
+                          return (
+                            <div key={camp.id} className="space-y-1">
+                              <div className="flex justify-between text-[10px]">
+                                <span className="font-bold text-slate-800">
+                                  {camp.platform} ({camp.campaign_label})
+                                </span>
+                                <span>
+                                  <span className="text-rose-600 font-bold">
+                                    -{formatEur(camp.ad_spend)}
+                                  </span>{' '}
+                                  →{' '}
+                                  <strong className="text-emerald-700">
+                                    +{formatEur(camp.revenue)}
+                                  </strong>
+                                </span>
+                              </div>
+                              <div className="space-y-0.5">
+                                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                  <div
+                                    className="bg-rose-500 h-full rounded-full"
+                                    style={{ width: `${spendPct}%` }}
+                                  />
+                                </div>
+                                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                  <div
+                                    className="bg-emerald-500 h-full rounded-full"
+                                    style={{ width: `${revPct}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
               </div>
 
+              {/* BLOQUE 3 (DERECHA): CUOTA DE TRÁFICO WEB (DONUT SIN 0%) Y MERCADOS SIN CORTES */}
               <div className="lg:col-span-5 p-4 rounded-2xl border border-slate-200 bg-[#fafaf9] flex flex-col justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-1.5 mb-2">
                     <Globe className="w-4 h-4 text-[#015b9d]" />
                     <h3 className="text-xs font-black uppercase text-black">
-                      3. Cuota de Comunidad (Sin Duplicados) y Mercados
+                      3. Cuota de Tráfico Web y Mercados Clave
                     </h3>
                   </div>
 
+                  {/* Donut de Visitas Web (Muestra el % real de aporte de cada canal) */}
                   <div className="bg-white p-3 rounded-xl border border-slate-200/80 flex items-center gap-4">
                     <div className="relative w-24 h-24 shrink-0">
                       <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                        {summary.donut.map((seg) => (
+                        {summary.webTrafficDonut.map((seg) => (
                           <circle
                             key={seg.id}
                             cx="18"
@@ -2271,51 +2354,51 @@ export default function CeoExecutiveYoyReportPage() {
                             r="15.915"
                             fill="transparent"
                             stroke={seg.color}
-                            strokeWidth="4.2"
+                            strokeWidth="4.4"
                             strokeDasharray={`${seg.pct} ${100 - seg.pct}`}
                             strokeDashoffset={-seg.start}
                           />
                         ))}
                       </svg>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-[11px] font-black text-black">
-                          {formatCompact(summary.totalFollowers)}
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                        <span className="text-xs font-black text-black leading-none">
+                          {formatCompact(summary.totalWebVisits)}
+                        </span>
+                        <span className="text-[8px] font-bold uppercase text-slate-400 mt-0.5">
+                          Visitas
                         </span>
                       </div>
                     </div>
 
-                    <div className="space-y-1 text-[11px] w-full max-h-28 overflow-y-auto pr-1">
-                      {summary.donut.map((seg) => (
-                        <div key={seg.id} className="flex items-center justify-between">
-                          <span className="flex items-center gap-1.5 font-bold text-slate-700 truncate">
+                    <div className="space-y-1.5 text-[11px] w-full">
+                      {summary.webTrafficDonut.map((seg) => (
+                        <div key={seg.id} className="flex items-center justify-between gap-2">
+                          <span className="flex items-center gap-1.5 font-bold text-slate-700 leading-tight">
                             <span
-                              className="w-2 h-2 rounded-full shrink-0"
+                              className="w-2.5 h-2.5 rounded-full shrink-0"
                               style={{ backgroundColor: seg.color }}
                             />
-                            <span className="truncate">{seg.name}</span>
+                            <span>{seg.name}</span>
                           </span>
-                          <span className="font-black text-black ml-1">{seg.pct.toFixed(1)}%</span>
+                          <span className="font-black text-black shrink-0">
+                            {seg.pct.toFixed(1)}%
+                          </span>
                         </div>
                       ))}
                     </div>
                   </div>
                 </div>
 
+                {/* Mercados Emisores con layout apilado limpio (CERO textos cortados) */}
                 {draft.markets.length > 0 && (
-                  <div className="bg-white p-3 rounded-xl border border-slate-200/80 space-y-2 text-[11px]">
-                    <div className="font-black text-black">
-                      Mercados Emisores / Distribución de Audiencia
+                  <div className="bg-white p-3 rounded-xl border border-slate-200/80 space-y-2.5 text-[11px]">
+                    <div className="font-black text-black uppercase text-[10px] tracking-wider">
+                      Mercados Emisores / Segmentación de Demanda
                     </div>
                     {draft.markets.map((mkt) => (
-                      <div key={mkt.id}>
-                        <div className="flex justify-between mb-0.5">
-                          <span className="truncate pr-1">{mkt.group_label}:</span>
-                          <strong className="text-[#081b2b] shrink-0">
-                            {mkt.market_a_name} {mkt.market_a_pct}% · {mkt.market_b_name}{' '}
-                            {mkt.market_b_pct}%
-                          </strong>
-                        </div>
-                        <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden flex">
+                      <div key={mkt.id} className="space-y-1">
+                        <div className="font-extrabold text-[#081b2b]">{mkt.group_label}</div>
+                        <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden flex">
                           <div
                             style={{
                               width: `${Math.min(100, mkt.market_a_pct)}%`,
@@ -2328,6 +2411,22 @@ export default function CeoExecutiveYoyReportPage() {
                               backgroundColor: mkt.market_b_color,
                             }}
                           />
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] font-bold text-slate-600">
+                          <span className="flex items-center gap-1">
+                            <span
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: mkt.market_a_color }}
+                            />
+                            {mkt.market_a_name}: <strong>{mkt.market_a_pct}%</strong>
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: mkt.market_b_color }}
+                            />
+                            {mkt.market_b_name}: <strong>{mkt.market_b_pct}%</strong>
+                          </span>
                         </div>
                       </div>
                     ))}
