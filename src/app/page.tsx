@@ -116,7 +116,7 @@ interface ClientTemplateReport {
 const SIAM_LOGO_URL =
   'https://siampark.net/templates/yootheme/cache/d1/siam-park-tenerife-main-logo-d1ab9a93.webp';
 
-const STORAGE_KEY = 'agency_ceo_clean_spanish_v13';
+const STORAGE_KEY = 'agency_ceo_clean_spanish_v14';
 
 const PRESET_COLORS = [
   '#0f172a',
@@ -289,13 +289,13 @@ const createBlankClientTemplate = (month: string): ClientTemplateReport => ({
   web_kpi_subtitle: 'Visitas hacia web y reservas',
   report_month: month,
   period_label: `Cierre Mensual · ${month}`,
-  target_max_cpa: 10,
-  target_min_roas: 3.0,
-  total_business_revenue: 8461.26,
-  new_customers_acquired: 48,
-  customer_ltv: 240,
+  target_max_cpa: 0.15,
+  target_min_roas: 4.0,
+  total_business_revenue: 13208.31,
+  new_customers_acquired: 175,
+  customer_ltv: 125,
   gross_margin_pct: 65,
-  avg_monthly_margin_per_customer: 55,
+  avg_monthly_margin_per_customer: 17,
   prev_year_web_visits: 0,
   prev_year_revenue: 0,
   auto_diagnosis: true,
@@ -303,18 +303,18 @@ const createBlankClientTemplate = (month: string): ClientTemplateReport => ({
   show_paid_section: true,
   organic_channels: [
     {
-      id: 'org-ig',
-      name: 'Instagram',
-      color: '#e1306c',
+      id: 'org-fb',
+      name: 'Facebook (Orgánico)',
+      color: '#1877f2',
       followers_total: 0,
       organic_growth_net: 0,
       organic_reach: 0,
       web_visits: 0,
     },
     {
-      id: 'org-fb',
-      name: 'Facebook',
-      color: '#1877f2',
+      id: 'org-ig',
+      name: 'Instagram (Orgánico)',
+      color: '#e1306c',
       followers_total: 0,
       organic_growth_net: 0,
       organic_reach: 0,
@@ -324,7 +324,7 @@ const createBlankClientTemplate = (month: string): ClientTemplateReport => ({
   paid_campaigns: [
     {
       id: 'paid-fb-msg',
-      platform: 'Facebook',
+      platform: 'Facebook Ads',
       campaign_label: 'Campaña Mensajes',
       color: '#1877f2',
       objective_type: 'Mensajes / Leads',
@@ -336,7 +336,7 @@ const createBlankClientTemplate = (month: string): ClientTemplateReport => ({
     },
     {
       id: 'paid-ig-traf',
-      platform: 'Instagram',
+      platform: 'Instagram Ads',
       campaign_label: 'Campaña Tráfico Web',
       color: '#e1306c',
       objective_type: 'Tráfico Web',
@@ -350,11 +350,11 @@ const createBlankClientTemplate = (month: string): ClientTemplateReport => ({
   markets: [
     {
       id: 'mkt-local',
-      group_label: 'Distribución Geográfica / Público',
-      market_a_name: 'Mercado Local / Principal',
+      group_label: 'Distribución por Sede / Zona',
+      market_a_name: 'Sede Principal',
       market_a_pct: 65,
       market_a_color: '#015b9d',
-      market_b_name: 'Mercado Secundario',
+      market_b_name: 'Segunda Sede',
       market_b_pct: 35,
       market_b_color: '#f5b514',
     },
@@ -374,58 +374,58 @@ const createBlankClientTemplate = (month: string): ClientTemplateReport => ({
       id: 'dir-new-2',
       area: '2. Trazabilidad en Sistema de Reservas',
       status: 'CORREGIR',
-      decision: 'Etiquetar el origen de cada venta (Instagram, Facebook, Google, WhatsApp) en el software de gestión.',
+      decision:
+        'Etiquetar el origen de cada venta (Instagram, Facebook, Google, WhatsApp) en el software de gestión.',
       expected_impact: '100% control de ingresos por canal.',
     },
     {
       id: 'dir-new-3',
       area: '3. Crecimiento Orgánico',
       status: 'MANTENER',
-      decision: 'Mantener publicaciones de prueba social y casos reales para reducir dependencia de anuncios.',
+      decision:
+        'Mantener publicaciones de prueba social y casos reales para reducir dependencia de anuncios.',
       expected_impact: 'Menor coste de captación global.',
     },
   ],
 });
 
-// DICCIONARIO PRÁCTICO: CÓMO SACAR CADA MÉTRICA EN CADA PLATAFORMA
 const EXTRACTION_PLATFORM_GUIDE = [
   {
-    platform: '1. Meta Business Suite (Orgánico IG y FB)',
+    platform: '1. Meta Business Suite (Solo Orgánico)',
     color: '#e1306c',
     steps: [
-      'Entra en Meta Business Suite → menú izquierdo "Estadísticas" → pestaña "Resultados".',
-      'Comunidad Total: Ve a "Público" → mira el total de seguidores actuales de Facebook e Instagram (pon 1 fila por red).',
-      'Crecimiento Orgánico: En "Resultados" → bloque "Seguidores" → anota los nuevos seguidores netos del mes.',
-      'Alcance / Impresiones: En "Resultados" → bloque "Visualizaciones" (o Alcance) del periodo.',
-      'Visitas a la Web: En "Resultados" → bloque "Clics en el enlace" (total de clics hacia tu web).',
+      'Entra en Meta Business Suite → "Estadísticas" → "Resultados".',
+      'Comunidad Total: En "Público", anota seguidores actuales de Facebook e Instagram.',
+      'Crecimiento Orgánico: En "Resultados" → "Seguidores", anota las altas netas del mes.',
+      'Visitas Web Orgánicas: Al total de "Clics en el enlace" réstale los clics de tus anuncios en Meta Ads para no duplicar tráfico de pago.',
     ],
   },
   {
     platform: '2. Meta Ads Manager (Anuncios de Pago)',
     color: '#1877f2',
     steps: [
-      'Abre Administrador de Anuncios → selecciona el mes exacto arriba a la derecha.',
-      'Haz clic en "Desglose" → "Por entrega" → "Plataforma" (para separar Facebook, Instagram, Audience Network).',
-      'Ordena o filtra por Objetivo de Campaña (Tráfico, Mensajes/WhatsApp o Ventas) para no mezclar clics con contactos.',
-      'Copia por cada fila: Alcance, Importe gastado (€) y Resultados (nunca pongas puntos de millar al escribirlo aquí).',
+      'Abre Informes Publicitarios → selecciona el mes exacto arriba a la derecha.',
+      'Usa desglose por "Plataforma" y "Objetivo" para separar Tráfico Web de Mensajes/WhatsApp.',
+      'Copia Alcance, Importe gastado (€) y Resultados (sin puntos de millar).',
     ],
   },
   {
     platform: '3. Google (Analytics 4, Search Console y Ads)',
     color: '#16a34a',
     steps: [
-      'Google Search (SEO): Entra en Google Search Console → "Rendimiento" → copia "Impresiones totales" (Alcance) y "Clics totales" (Visitas Web).',
-      'Tráfico Directo / Referidos: Entra en Google Analytics 4 → "Informes" → "Adquisición de tráfico" → copia las sesiones de Direct y Referral.',
-      'Google Ads: Entra en Campañas → copia Impresiones, Coste (€), Conversiones (ventas/leads) y Valor de conversión (€).',
+      'Google Search (SEO): Search Console → "Rendimiento" → copia Impresiones y Clics totales.',
+      'Tráfico Directo / Referidos: Google Analytics 4 → "Adquisición de tráfico" → sesiones de Direct y Referral.',
+      'Google Ads: Campañas → copia Impresiones, Coste (€), Conversiones y Valor (€).',
     ],
   },
   {
-    platform: '4. TikTok, YouTube y Caja Real (CRM / TIMP)',
+    platform: '4. Caja Real y Clientes (CRM / TIMP)',
     color: '#0f172a',
     steps: [
-      'TikTok Studio / YouTube Studio: Estadísticas → selecciona los últimos 28/30 días → copia Suscriptores/Seguidores netos, Visualizaciones y Clics en perfil.',
-      'Facturación Total del Negocio (€): Saca el cierre mensual bruto de tu TPV, Taquilla o software de gestión (ej. TIMP).',
-      'Nuevos Clientes Reales: Filtra en tu CRM/TIMP cuántos clientes se dieron de alta por primera vez este mes (sin contar renovaciones).',
+      'Facturación Total Caja (€): Suma el cierre mensual bruto de Contabilidad en todas las sedes.',
+      'Clientes Nuevos Captados: Ve a Estadísticas → Clientes → "Flujo de clientes" y suma las altas del mes.',
+      'Valor Total por Cliente (€): Estadísticas → Negocio → "Rentabilidad media por cliente" (último mes consolidado).',
+      'Beneficio Mensual/Cliente (€): "Ingreso medio por cliente" × Margen Bruto (%).',
     ],
   },
 ];
@@ -739,7 +739,7 @@ export default function CeoExecutiveCleanReportPage() {
   };
 
   // =========================================================================
-  // CÁLCULO FINANCIERO EN LENGUAJE EJECUTIVO CLARO (SIN JERGA TÉCNICA)
+  // CÁLCULO FINANCIERO EN LENGUAJE EJECUTIVO CLARO (CORREGIDO SIN DUPLICIDAD)
   // =========================================================================
   const summary = useMemo(() => {
     const orgList = draft.organic_channels;
@@ -748,11 +748,18 @@ export default function CeoExecutiveCleanReportPage() {
     const totalFollowers = orgList.reduce((s, n) => s + Number(n.followers_total || 0), 0);
     const totalOrganicGrowth = orgList.reduce((s, n) => s + Number(n.organic_growth_net || 0), 0);
     const totalOrganicReach = orgList.reduce((s, n) => s + Number(n.organic_reach || 0), 0);
-    const totalWebVisits = orgList.reduce((s, n) => s + Number(n.web_visits || 0), 0);
+    const totalOrganicWebVisits = orgList.reduce((s, n) => s + Number(n.web_visits || 0), 0);
 
     const totalPaidReach = paidList.reduce((s, n) => s + Number(n.paid_reach || 0), 0);
     const totalAdSpend = paidList.reduce((s, n) => s + Number(n.ad_spend || 0), 0);
     const totalAttributedRevenue = paidList.reduce((s, n) => s + Number(n.revenue || 0), 0);
+
+    // Tráfico Web Total = Visitas Orgánicas (Tabla 2) + Clics de Tráfico Web Paid (Tabla 3)
+    const totalPaidTrafficClicks = paidList
+      .filter((p) => p.objective_type === 'Tráfico Web')
+      .reduce((s, p) => s + Number(p.results_count || 0), 0);
+
+    const totalAllWebTraffic = totalOrganicWebVisits + totalPaidTrafficClicks;
 
     // Indicadores Financieros de Dirección General
     const bizRevenue = Number(draft.total_business_revenue || 0) || totalAttributedRevenue;
@@ -778,28 +785,26 @@ export default function CeoExecutiveCleanReportPage() {
         ? costPerNewCustomer / monthlyMarginPerCust
         : 0;
 
+    // Conversión real sobre el tráfico web total (ej. 175 / 6.439 = 2.72%)
     const funnelConvRate =
-      totalWebVisits > 0 && newCustomers > 0 ? (newCustomers / totalWebVisits) * 100 : 0;
+      totalAllWebTraffic > 0 && newCustomers > 0
+        ? (newCustomers / totalAllWebTraffic) * 100
+        : 0;
 
-    const totalPaidTrafficClicks = paidList
-      .filter((p) => p.objective_type === 'Tráfico Web')
-      .reduce((s, p) => s + Number(p.results_count || 0), 0);
+    // Cuota real de tráfico gratuito sin anuncios (ej. 91 / 6.439 = 1.4%)
     const freeTrafficSharePct =
-      totalWebVisits > 0
-        ? Math.max(
-            0,
-            Math.min(100, ((totalWebVisits - totalPaidTrafficClicks) / totalWebVisits) * 100)
-          )
-        : 100;
+      totalAllWebTraffic > 0 ? (totalOrganicWebVisits / totalAllWebTraffic) * 100 : 100;
 
-    const webVisitsYoY = calcYoY(totalWebVisits, Number(draft.prev_year_web_visits || 0));
+    const webVisitsYoY = calcYoY(totalAllWebTraffic, Number(draft.prev_year_web_visits || 0));
     const revenueYoY = calcYoY(bizRevenue, Number(draft.prev_year_revenue || 0));
 
-    // Enriquecer canales orgánicos con cuota web y % de clic
+    // Enriquecer canales orgánicos con cuota web orgánica y % de clic
     const enrichedOrgList = [...orgList]
       .map((ch) => {
         const webSharePct =
-          totalWebVisits > 0 ? (Number(ch.web_visits || 0) / totalWebVisits) * 100 : 0;
+          totalOrganicWebVisits > 0
+            ? (Number(ch.web_visits || 0) / totalOrganicWebVisits) * 100
+            : 0;
         const clickRatePct =
           Number(ch.organic_reach || 0) > 0
             ? (Number(ch.web_visits || 0) / Number(ch.organic_reach || 0)) * 100
@@ -934,7 +939,7 @@ export default function CeoExecutiveCleanReportPage() {
       profitableTitle = `${bestOrganic.name} (Canal Gratuito)`;
       profitableWhy = `Aporta ${formatCompact(bestOrganic.web_visits)} visitas web (${bestOrganic.webSharePct.toFixed(
         1
-      )}% del total) con 0 € de gasto.`;
+      )}% del orgánico) con 0 € de gasto.`;
     }
 
     let leakTitle = 'Sin fugas de presupuesto';
@@ -951,23 +956,28 @@ export default function CeoExecutiveCleanReportPage() {
     let funnelTitle = `Conversión a Cliente: ${funnelConvRate.toFixed(2)}%`;
     let funnelWhy =
       newCustomers > 0
-        ? `De ${formatCompact(totalWebVisits)} visitas web se cerraron ${formatCompact(
+        ? `De ${formatCompact(totalAllWebTraffic)} visitas web (${formatCompact(
+            totalOrganicWebVisits
+          )} orgánicas + ${formatCompact(totalPaidTrafficClicks)} de pago) se cerraron ${formatCompact(
             newCustomers
           )} clientes nuevos (a ${formatEur(costPerNewCustomer)} cada uno).`
         : 'Indica los nuevos clientes captados en el editor para calcular la conversión real.';
-    if (totalWebVisits >= 2000 && funnelConvRate > 0 && funnelConvRate < 0.8) {
+    if (totalAllWebTraffic >= 2000 && funnelConvRate > 0 && funnelConvRate < 0.8) {
       funnelTitle = `Freno en el Cierre Web (${funnelConvRate.toFixed(2)}%)`;
       funnelWhy = `Llegan ${formatCompact(
-        totalWebVisits
+        totalAllWebTraffic
       )} visitas pero convierten pocas: revisar velocidad web móvil o atención comercial.`;
     }
 
-    // Donut de Cuota de Tráfico Web
+    // Donut de Cuota de Tráfico Web Orgánico
     let startPct = 0;
     const webTrafficDonut = enrichedOrgList
       .filter((n) => n.web_visits > 0)
       .map((n) => {
-        const pct = totalWebVisits > 0 ? (Number(n.web_visits || 0) / totalWebVisits) * 100 : 0;
+        const pct =
+          totalOrganicWebVisits > 0
+            ? (Number(n.web_visits || 0) / totalOrganicWebVisits) * 100
+            : 0;
         const item = { ...n, pct, start: startPct };
         startPct += pct;
         return item;
@@ -999,8 +1009,8 @@ export default function CeoExecutiveCleanReportPage() {
       generatedHeadline += `Comunidad de ${formatCompact(
         totalFollowers
       )} seguidores (+${formatCompact(totalOrganicGrowth)} netos) y ${formatCompact(
-        totalWebVisits
-      )} visitas web (${freeTrafficSharePct.toFixed(0)}% tráfico gratuito sin anuncios). `;
+        totalAllWebTraffic
+      )} visitas web (${freeTrafficSharePct.toFixed(1)}% tráfico gratuito sin anuncios). `;
     }
 
     if (leakingCampaigns.length > 0) {
@@ -1017,7 +1027,9 @@ export default function CeoExecutiveCleanReportPage() {
       totalFollowers,
       totalOrganicGrowth,
       totalOrganicReach,
-      totalWebVisits,
+      totalOrganicWebVisits,
+      totalPaidTrafficClicks,
+      totalAllWebTraffic,
       webVisitsYoY,
       totalPaidReach,
       totalAdSpend,
@@ -1066,6 +1078,10 @@ export default function CeoExecutiveCleanReportPage() {
             border: none !important;
             max-width: 100% !important;
             padding: 0 !important;
+          }
+          .print-keep {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
           }
         }
       `}</style>
@@ -1219,7 +1235,7 @@ export default function CeoExecutiveCleanReportPage() {
                   Configuración del Informe Ejecutivo · {selectedMonth}
                 </h2>
                 <p className="text-[11px] text-slate-500">
-                  Escribe los números sin puntos de millar (ej. 38689). Todos los cálculos financieros se generan automáticamente.
+                  Escribe los números sin puntos de millar (ej. 13208.31). En la tabla 2A pon solo visitas orgánicas sin anuncio.
                 </p>
               </div>
               <button
@@ -1470,7 +1486,7 @@ export default function CeoExecutiveCleanReportPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="font-black uppercase text-slate-900">
-                  2A. Canales Orgánicos y Tráfico Web Gratuito (1 fila por red o fuente)
+                  2A. Canales Orgánicos y Tráfico Web Gratuito (Solo visitas sin anuncio)
                 </span>
                 <button
                   type="button"
@@ -1491,7 +1507,7 @@ export default function CeoExecutiveCleanReportPage() {
                       <th className="p-2 text-right">Seguidores Totales</th>
                       <th className="p-2 text-right">Nuevos Seguidores</th>
                       <th className="p-2 text-right">Visualizaciones</th>
-                      <th className="p-2 text-right">Visitas Web</th>
+                      <th className="p-2 text-right">Visitas Web Gratuitas</th>
                       <th className="p-2 text-center">Quitar</th>
                     </tr>
                   </thead>
@@ -1940,15 +1956,15 @@ export default function CeoExecutiveCleanReportPage() {
 
           <div className="p-6 sm:p-8 space-y-6">
             {/* SÍNTESIS EJECUTIVA */}
-            <div className="p-4 rounded-2xl bg-slate-900 text-slate-100 text-xs sm:text-sm leading-relaxed border-l-4 border-[#f5b514]">
+            <div className="print-keep p-4 rounded-2xl bg-slate-900 text-slate-100 text-xs sm:text-sm leading-relaxed border-l-4 border-[#f5b514]">
               <strong className="text-[#f5b514] uppercase text-xs tracking-wider mr-2">
                 Resumen Ejecutivo:
               </strong>
               {activeHeadline}
             </div>
 
-            {/* BLOQUE 1: SALUD FINANCIERA DEL NEGOCIO (EN ESPAÑOL CLARO SIN SIGLAS) */}
-            <div className="space-y-2.5">
+            {/* BLOQUE 1: SALUD FINANCIERA DEL NEGOCIO */}
+            <div className="print-keep space-y-2.5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-900">
                   <Briefcase className="w-4 h-4 text-[#015b9d]" />
@@ -2054,17 +2070,18 @@ export default function CeoExecutiveCleanReportPage() {
                     Tráfico Gratuito
                   </div>
                   <div className="text-xl font-black text-[#015b9d] mt-1">
-                    {summary.freeTrafficSharePct.toFixed(0)}%
+                    {summary.freeTrafficSharePct.toFixed(1)}%
                   </div>
                   <div className="text-[10px] text-slate-500 leading-tight mt-1">
-                    Visitas sin pagar anuncios
+                    {formatCompact(summary.totalOrganicWebVisits)} de{' '}
+                    {formatCompact(summary.totalAllWebTraffic)} visitas
                   </div>
                 </div>
               </div>
             </div>
 
             {/* BLOQUE 2: DIAGNÓSTICO DIRECTIVO (3 TARJETAS DE DECISIÓN) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            <div className="print-keep grid grid-cols-1 md:grid-cols-3 gap-3.5">
               <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 flex items-start gap-3">
                 <ShieldCheck className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" />
                 <div>
@@ -2134,7 +2151,7 @@ export default function CeoExecutiveCleanReportPage() {
             </div>
 
             {/* BLOQUE 3: RESUMEN DE TRACCIÓN GLOBAL (4 TARJETAS LIMPIAS) */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+            <div className="print-keep grid grid-cols-2 lg:grid-cols-4 gap-3.5">
               <div className="p-4 rounded-2xl bg-white border border-slate-200 flex items-center justify-between">
                 <div>
                   <div className="text-[10px] font-black uppercase text-slate-400">
@@ -2192,11 +2209,11 @@ export default function CeoExecutiveCleanReportPage() {
               <div className="p-4 rounded-2xl bg-white border border-slate-200 flex items-center justify-between">
                 <div>
                   <div className="text-[10px] font-black uppercase text-slate-400">
-                    Visitas a la Web
+                    Visitas Web Totales
                   </div>
                   <div className="flex items-baseline gap-1.5 mt-0.5">
                     <span className="text-2xl font-black text-slate-950">
-                      {formatCompact(summary.totalWebVisits)}
+                      {formatCompact(summary.totalAllWebTraffic)}
                     </span>
                     {summary.webVisitsYoY !== null && (
                       <span
@@ -2213,7 +2230,8 @@ export default function CeoExecutiveCleanReportPage() {
                     )}
                   </div>
                   <div className="text-[11px] font-bold text-[#015b9d] mt-0.5">
-                    {draft.web_kpi_subtitle}
+                    {formatCompact(summary.totalOrganicWebVisits)} orgánicas +{' '}
+                    {formatCompact(summary.totalPaidTrafficClicks)} pago
                   </div>
                 </div>
                 <div className="w-10 h-10 rounded-2xl bg-amber-50 text-[#ed6723] flex items-center justify-center shrink-0">
@@ -2224,9 +2242,9 @@ export default function CeoExecutiveCleanReportPage() {
 
             {/* BLOQUE 4: TABLAS DE RENDIMIENTO (ORGÁNICO Y PAGO) */}
             <div className="space-y-5">
-              <div>
+              <div className="print-keep">
                 <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 mb-2">
-                  2. Rendimiento de Canales Orgánicos ({summary.orgList.length} fuentes activas)
+                  2. Rendimiento de Canales Orgánicos ({summary.orgList.length} fuentes activas · Solo tráfico gratuito)
                 </h2>
                 <div className="overflow-x-auto rounded-2xl border border-slate-200">
                   <table className="w-full text-left border-collapse text-xs">
@@ -2236,7 +2254,7 @@ export default function CeoExecutiveCleanReportPage() {
                         <th className="py-2.5 px-3 text-center">Comunidad Total</th>
                         <th className="py-2.5 px-3 text-center">Crecimiento Mes</th>
                         <th className="py-2.5 px-3 text-center">Visualizaciones</th>
-                        <th className="py-2.5 px-3 text-center">Visitas a la Web</th>
+                        <th className="py-2.5 px-3 text-center">Visitas Web Gratuitas</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -2293,7 +2311,7 @@ export default function CeoExecutiveCleanReportPage() {
                           {formatCompact(summary.totalOrganicReach)}
                         </td>
                         <td className="py-2.5 px-3 text-center text-[#f5b514]">
-                          {formatCompact(summary.totalWebVisits)}
+                          {formatCompact(summary.totalOrganicWebVisits)}
                         </td>
                       </tr>
                     </tbody>
@@ -2302,7 +2320,7 @@ export default function CeoExecutiveCleanReportPage() {
               </div>
 
               {draft.show_paid_section && summary.evaluatedPaid.length > 0 && (
-                <div className="space-y-3">
+                <div className="print-keep space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h2 className="text-xs font-black uppercase tracking-wider text-slate-900">
                       3. Rendimiento de Campañas de Pago por Objetivo (Coste Máx:{' '}
@@ -2461,14 +2479,14 @@ export default function CeoExecutiveCleanReportPage() {
             </div>
 
             {/* BLOQUE 5: GRÁFICOS VISUALES CLAROS Y MERCADOS */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <div className="print-keep grid grid-cols-1 lg:grid-cols-12 gap-4">
               <div className="lg:col-span-7 p-4 rounded-2xl border border-slate-200 bg-slate-50/60 flex flex-col justify-between gap-4">
                 <div className="space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <BarChart3 className="w-4 h-4 text-[#015b9d]" />
                       <h3 className="text-xs font-black uppercase text-slate-900">
-                        4. Aporte de Visitas Web e Interés por Canal
+                        4. Aporte de Visitas Web Orgánicas e Interés por Canal
                       </h3>
                     </div>
                     <span className="text-[10px] font-semibold text-slate-500">
@@ -2597,7 +2615,7 @@ export default function CeoExecutiveCleanReportPage() {
                   <div className="flex items-center gap-1.5 mb-2">
                     <Globe className="w-4 h-4 text-[#015b9d]" />
                     <h3 className="text-xs font-black uppercase text-slate-900">
-                      5. Origen del Tráfico Web y Mercados
+                      5. Origen del Tráfico Orgánico y Sedes
                     </h3>
                   </div>
 
@@ -2620,10 +2638,10 @@ export default function CeoExecutiveCleanReportPage() {
                       </svg>
                       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                         <span className="text-xs font-black text-slate-950 leading-none">
-                          {formatCompact(summary.totalWebVisits)}
+                          {formatCompact(summary.totalOrganicWebVisits)}
                         </span>
                         <span className="text-[8px] font-bold uppercase text-slate-400 mt-0.5">
-                          Visitas
+                          Orgánicas
                         </span>
                       </div>
                     </div>
@@ -2700,7 +2718,7 @@ export default function CeoExecutiveCleanReportPage() {
             </div>
 
             {/* BLOQUE 6: PLAN DE ACCIÓN RECOMENDADO */}
-            <div className="rounded-2xl bg-amber-50/80 border-2 border-[#f5b514] p-4 space-y-3">
+            <div className="print-keep rounded-2xl bg-amber-50/80 border-2 border-[#f5b514] p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Compass className="w-4 h-4 text-[#ed6723]" />
