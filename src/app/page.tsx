@@ -31,6 +31,7 @@ import {
   AlertTriangle,
   ShieldCheck,
   Filter,
+  CalendarRange,
 } from 'lucide-react';
 
 export type ObjectiveCategory =
@@ -39,7 +40,6 @@ export type ObjectiveCategory =
   | 'Ventas / Compras'
   | 'Alcance / Branding';
 
-// BLOQUE A: Presencia Orgánica por Canal (1 fila por plataforma, nunca duplica comunidad)
 interface OrganicChannelRow {
   id: string;
   name: string;
@@ -50,7 +50,6 @@ interface OrganicChannelRow {
   web_visits: number;
 }
 
-// BLOQUE B: Campañas de Pago desglosadas por Objetivo
 interface PaidCampaignRow {
   id: string;
   platform: string;
@@ -92,6 +91,9 @@ interface ClientTemplateReport {
   period_label: string;
   target_max_cpa: number;
   target_min_roas: number;
+  // Comparativa Interanual (YoY)
+  prev_year_web_visits: number;
+  prev_year_revenue: number;
   auto_diagnosis: boolean;
   custom_headline: string;
   show_paid_section: boolean;
@@ -106,7 +108,7 @@ interface ClientTemplateReport {
 const SIAM_LOGO_URL =
   'https://siampark.net/templates/yootheme/cache/d1/siam-park-tenerife-main-logo-d1ab9a93.webp';
 
-const STORAGE_KEY = 'agency_ceo_dual_matrix_v9';
+const STORAGE_KEY = 'agency_ceo_yoy_ticket_v10';
 
 const PRESET_COLORS = [
   '#0f172a',
@@ -135,7 +137,9 @@ const DEFAULT_SIAM_TEMPLATE: ClientTemplateReport = {
   report_month: '2026-10',
   period_label: 'Octubre 2026 (01 – 31 Oct)',
   target_max_cpa: 15,
-  target_min_roas: 3.0,
+  target_min_roas: 4.0,
+  prev_year_web_visits: 4210,
+  prev_year_revenue: 34500,
   auto_diagnosis: true,
   custom_headline: '',
   show_paid_section: true,
@@ -188,28 +192,28 @@ const DEFAULT_SIAM_TEMPLATE: ClientTemplateReport = {
   ],
   paid_campaigns: [
     {
-      id: 'paid-yt-brand',
-      platform: 'YouTube Ads',
-      campaign_label: 'Vídeo Descubrimiento UK/ES',
-      color: '#dc2626',
-      objective_type: 'Alcance / Branding',
-      result_unit_label: 'views',
-      paid_reach: 81500,
-      ad_spend: 0,
-      results_count: 81500,
-      revenue: 0,
+      id: 'paid-google-search',
+      platform: 'Google Ads',
+      campaign_label: 'Marca + Entradas UK/ES',
+      color: '#16a34a',
+      objective_type: 'Ventas / Compras',
+      result_unit_label: 'entradas',
+      paid_reach: 42000,
+      ad_spend: 2800,
+      results_count: 540,
+      revenue: 29700,
     },
     {
-      id: 'paid-ig-traf',
-      platform: 'Instagram Ads',
-      campaign_label: 'Impulso Alcance y Web',
-      color: '#e1306c',
-      objective_type: 'Tráfico Web',
-      result_unit_label: 'clics',
-      paid_reach: 24500,
-      ad_spend: 0,
-      results_count: 1120,
-      revenue: 0,
+      id: 'paid-meta-sales',
+      platform: 'Meta Ads (FB/IG)',
+      campaign_label: 'Retargeting Taquilla + VIP',
+      color: '#1877f2',
+      objective_type: 'Ventas / Compras',
+      result_unit_label: 'entradas',
+      paid_reach: 64000,
+      ad_spend: 1450,
+      results_count: 195,
+      revenue: 11850,
     },
   ],
   markets: [
@@ -274,6 +278,8 @@ const createBlankClientTemplate = (month: string): ClientTemplateReport => ({
   period_label: `Cierre Mensual · ${month}`,
   target_max_cpa: 5,
   target_min_roas: 3.0,
+  prev_year_web_visits: 0,
+  prev_year_revenue: 0,
   auto_diagnosis: true,
   custom_headline: '',
   show_paid_section: true,
@@ -311,36 +317,12 @@ const createBlankClientTemplate = (month: string): ClientTemplateReport => ({
       revenue: 0,
     },
     {
-      id: 'paid-fb-traf',
-      platform: 'Facebook',
-      campaign_label: 'Campaña Tráfico Web',
-      color: '#1877f2',
-      objective_type: 'Tráfico Web',
-      result_unit_label: 'clics',
-      paid_reach: 0,
-      ad_spend: 0,
-      results_count: 0,
-      revenue: 0,
-    },
-    {
       id: 'paid-ig-traf',
       platform: 'Instagram',
       campaign_label: 'Campaña Tráfico Web',
       color: '#e1306c',
       objective_type: 'Tráfico Web',
       result_unit_label: 'clics',
-      paid_reach: 0,
-      ad_spend: 0,
-      results_count: 0,
-      revenue: 0,
-    },
-    {
-      id: 'paid-ig-msg',
-      platform: 'Instagram',
-      campaign_label: 'Campaña Mensajes',
-      color: '#e1306c',
-      objective_type: 'Mensajes / Leads',
-      result_unit_label: 'mensajes',
       paid_reach: 0,
       ad_spend: 0,
       results_count: 0,
@@ -372,10 +354,10 @@ const createBlankClientTemplate = (month: string): ClientTemplateReport => ({
     },
     {
       id: 'dir-new-2',
-      area: '2. Optimizar Conversión Web',
+      area: '2. Trazabilidad y Atribución',
       status: 'CORREGIR',
-      decision: 'Mejorar página de destino y oferta para convertir el tráfico que llega y no cierra.',
-      expected_impact: 'Subir tasa de conversión web.',
+      decision: 'Implementar etiquetas UTM / tarifas identificadas por canal en el CRM de reservas.',
+      expected_impact: '100% atribución de ingresos por canal.',
     },
     {
       id: 'dir-new-3',
@@ -389,32 +371,32 @@ const createBlankClientTemplate = (month: string): ClientTemplateReport => ({
 
 const DATA_SOURCES_GUIDE = [
   {
-    network: 'Bloque A: Meta Business (Orgánico)',
+    network: 'Bloque A: Orgánico y Web (1 fila/canal)',
     color: '#e1306c',
-    organic: '1 fila por red (IG / FB): Público (Seguidores totales) + Resultados (Seguidores nuevos y Visualizaciones).',
-    paid: 'No poner gasto aquí (va en el Bloque B para no duplicar comunidad).',
-    web: 'Resultados → "Clics en el enlace" totales del mes.',
+    organic: 'Meta Business / TikTok / YouTube / GA4 (Organic/Direct/Referral) sin duplicar comunidad.',
+    paid: 'No poner gasto aquí (va en el Bloque B).',
+    web: 'Clics en enlace o sesiones web del periodo.',
   },
   {
-    network: 'Bloque B: Meta Ads por Objetivo',
+    network: 'Bloque B: Campañas por Objetivo',
     color: '#1877f2',
     organic: '—',
-    paid: 'Tabla dinámica por Objetivo + Plataforma → Columna "Alcance" y "Monto gastado".',
-    web: 'Columna "Resultados": crea una fila para Tráfico (clics) y otra para Mensajes (leads).',
+    paid: 'Meta Ads / Google Ads desglosado por Objetivo (Ventas, Mensajes, Tráfico).',
+    web: 'Introduce Ingresos (€) para que calcule ROAS y Ticket Medio automáticamente.',
   },
   {
-    network: 'TikTok & YouTube',
+    network: 'Comparativa Interanual (YoY)',
     color: '#0f172a',
-    organic: 'TikTok Studio / YouTube Studio → Estadísticas → Seguidores netos + Visualizaciones.',
-    paid: 'Si haces pauta, añade una fila en el Bloque B con su gasto y resultados.',
-    web: 'Clics en enlace de bio/tarjetas + Google Analytics 4.',
+    organic: 'Visitas web del mismo mes del año anterior (ej. Oct 2025).',
+    paid: 'Facturación atribuida del mismo mes del año anterior.',
+    web: 'Permite al CEO medir crecimiento real eliminando la estacionalidad.',
   },
   {
-    network: 'Google / LinkedIn / Otros',
+    network: 'Ticket Medio y Márgenes',
     color: '#16a34a',
-    organic: 'Search Console / LinkedIn Análisis → Impresiones y nuevos seguidores.',
-    paid: 'Google Ads / LinkedIn Campaign Manager → Impresiones, Gasto y Conversiones en Bloque B.',
-    web: 'GA4 → Adquisición de tráfico (Sesiones por fuente/medio).',
+    organic: 'Ticket Medio = Ingresos (€) ÷ Ventas/Entradas.',
+    paid: 'Diferencia canales que venden entradas básicas vs. paquetes VIP de alto margen.',
+    web: 'Valida que el CPA esté siempre por debajo del umbral rentable.',
   },
 ];
 
@@ -432,7 +414,12 @@ function formatEur(val: number): string {
   }).format(val);
 }
 
-export default function CeoDualMatrixReportPage() {
+function calcYoY(current: number, previous: number): number | null {
+  if (!previous || previous <= 0) return null;
+  return ((current - previous) / previous) * 100;
+}
+
+export default function CeoExecutiveYoyReportPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>('2026-10');
   const [reportsMap, setReportsMap] = useState<Record<string, ClientTemplateReport>>({
     '2026-10': DEFAULT_SIAM_TEMPLATE,
@@ -478,7 +465,7 @@ export default function CeoDualMatrixReportPage() {
     setLogoError(false);
     setDraft(createBlankClientTemplate(selectedMonth));
     setEditMode(true);
-    setToast('Plantilla en blanco lista (Orgánico + Paid separados)');
+    setToast('Plantilla en blanco lista para nuevo cliente');
     setTimeout(() => setToast(null), 3000);
   };
 
@@ -506,7 +493,7 @@ export default function CeoDualMatrixReportPage() {
       // Ignorar
     }
     setEditMode(false);
-    setToast('Informe actualizado sin duplicidades');
+    setToast('Informe ejecutivo guardado');
     setTimeout(() => setToast(null), 3000);
   };
 
@@ -604,8 +591,8 @@ export default function CeoDualMatrixReportPage() {
           platform: 'Meta Ads',
           campaign_label: 'Nueva Campaña',
           color: nextColor,
-          objective_type: 'Mensajes / Leads',
-          result_unit_label: 'mensajes',
+          objective_type: 'Ventas / Compras',
+          result_unit_label: 'ventas',
           paid_reach: 0,
           ad_spend: 0,
           results_count: 0,
@@ -718,24 +705,26 @@ export default function CeoDualMatrixReportPage() {
   };
 
   // =========================================================================
-  // MOTOR DE CÁLCULO SIN DUPLICIDADES (ORGÁNICO POR CANAL + PAID POR OBJETIVO)
+  // MOTOR DE CÁLCULO EJECUTIVO (YoY + TICKET MEDIO + RENTABILIDAD POR OBJETIVO)
   // =========================================================================
   const summary = useMemo(() => {
     const orgList = draft.organic_channels;
     const paidList = draft.paid_campaigns;
 
-    // Totales Bloque A (Orgánico puro: 1 fila por canal, 0 duplicidades)
     const totalFollowers = orgList.reduce((s, n) => s + Number(n.followers_total || 0), 0);
     const totalOrganicGrowth = orgList.reduce((s, n) => s + Number(n.organic_growth_net || 0), 0);
     const totalOrganicReach = orgList.reduce((s, n) => s + Number(n.organic_reach || 0), 0);
     const totalWebVisits = orgList.reduce((s, n) => s + Number(n.web_visits || 0), 0);
 
-    // Totales Bloque B (Paid Media desglosado por objetivo)
     const totalPaidReach = paidList.reduce((s, n) => s + Number(n.paid_reach || 0), 0);
     const totalAdSpend = paidList.reduce((s, n) => s + Number(n.ad_spend || 0), 0);
     const totalRevenue = paidList.reduce((s, n) => s + Number(n.revenue || 0), 0);
 
-    // Auditoría financiera de cada campaña Paid por objetivo
+    // Variación Interanual (YoY %)
+    const webVisitsYoY = calcYoY(totalWebVisits, Number(draft.prev_year_web_visits || 0));
+    const revenueYoY = calcYoY(totalRevenue, Number(draft.prev_year_revenue || 0));
+
+    // Auditoría financiera de cada campaña Paid (incluyendo Ticket Medio)
     const evaluatedPaid = paidList.map((camp) => {
       const spend = Number(camp.ad_spend || 0);
       const results = Number(camp.results_count || 0);
@@ -743,6 +732,7 @@ export default function CeoDualMatrixReportPage() {
 
       const cpa = spend > 0 && results > 0 ? spend / results : 0;
       const roas = spend > 0 && rev > 0 ? rev / spend : 0;
+      const avgTicket = rev > 0 && results > 0 ? rev / results : 0;
 
       let verdict: 'ESCALAR' | 'OPTIMIZAR' | 'FUGA / CORTAR' | 'SIN COSTE' = 'SIN COSTE';
       let reason = 'Impulso sin coste asignado en esta línea.';
@@ -776,7 +766,7 @@ export default function CeoDualMatrixReportPage() {
           verdict = 'ESCALAR';
           reason =
             rev > 0
-              ? `Rentable: ROAS ${roas.toFixed(2)}x (meta ${draft.target_min_roas}x).`
+              ? `Rentable: ROAS ${roas.toFixed(2)}x · Ticket medio ${formatEur(avgTicket)}.`
               : `Coste eficiente: ${cpa.toFixed(2)} €/${camp.result_unit_label.replace(/s$/, '')}.`;
         } else {
           verdict = 'OPTIMIZAR';
@@ -788,12 +778,13 @@ export default function CeoDualMatrixReportPage() {
         ...camp,
         cpa,
         roas,
+        avgTicket,
         verdict,
         reason,
       };
     });
 
-    // Agrupación estricta por Objetivo (sin mezclar clics con mensajes o ventas)
+    // Agrupación estricta por Objetivo
     const byObjectiveMap = new Map<
       ObjectiveCategory,
       {
@@ -828,9 +819,11 @@ export default function CeoDualMatrixReportPage() {
       ...grp,
       cpr: grp.totalResults > 0 && grp.totalSpend > 0 ? grp.totalSpend / grp.totalResults : 0,
       roas: grp.totalSpend > 0 && grp.totalRevenue > 0 ? grp.totalRevenue / grp.totalSpend : 0,
+      avgTicket:
+        grp.totalRevenue > 0 && grp.totalResults > 0 ? grp.totalRevenue / grp.totalResults : 0,
     }));
 
-    // Tarjetas ejecutivas CEO: Qué es rentable, Dónde se pierde dinero, Embudo
+    // Tarjetas ejecutivas CEO
     const activeSpendCampaigns = evaluatedPaid.filter((c) => c.ad_spend > 0);
     const leakingCampaigns = evaluatedPaid.filter((c) => c.verdict === 'FUGA / CORTAR');
     const wastedSpend = leakingCampaigns.reduce((s, c) => s + Number(c.ad_spend || 0), 0);
@@ -856,7 +849,7 @@ export default function CeoDualMatrixReportPage() {
     let leakTitle = 'Sin fugas de presupuesto';
     let leakWhy =
       activeSpendCampaigns.length > 0
-        ? `Todas las campañas operan por debajo del CPA máximo (${draft.target_max_cpa} €).`
+        ? `Todas las campañas operan dentro del umbral rentable (${draft.target_max_cpa} € CPA).`
         : 'Sin inversión publicitaria activa en este periodo.';
     if (leakingCampaigns.length > 0) {
       const worst = [...leakingCampaigns].sort((a, b) => b.ad_spend - a.ad_spend)[0];
@@ -873,16 +866,23 @@ export default function CeoDualMatrixReportPage() {
     let funnelTitle = 'Embudo equilibrado';
     let funnelWhy = 'Buena conversión entre alcance, clics hacia web y contactos/ventas.';
     if (totalWebVisits >= 2000 && totalLeadsOrSales === 0 && activeSpendCampaigns.length > 0) {
-      funnelTitle = 'Fuga en Cierre (Mucho tráfico, 0 leads/ventas)';
+      funnelTitle = 'Fuga en Cierre (Mucho tráfico, 0 ventas/leads)';
       funnelWhy = `Se generan ${formatCompact(
         totalWebVisits
-      )} visitas web pero sin conversiones finales registradas: revisar landing page.`;
+      )} visitas web pero sin conversiones finales atribuidas: revisar pasarela de compra o UTM.`;
     } else if (totalLeadsOrSales > 0) {
-      funnelTitle = `Conversión Activa (${formatCompact(totalLeadsOrSales)} leads/ventas)`;
-      funnelWhy = `El embudo transforma tráfico en oportunidades comerciales reales.`;
+      const globalTicket =
+        totalRevenue > 0 && totalLeadsOrSales > 0 ? totalRevenue / totalLeadsOrSales : 0;
+      funnelTitle = `Conversión Activa (${formatCompact(totalLeadsOrSales)} cierres)`;
+      funnelWhy =
+        globalTicket > 0
+          ? `Facturación atribuida de ${formatEur(totalRevenue)} con un ticket medio de ${formatEur(
+              globalTicket
+            )} por cliente.`
+          : `El embudo transforma tráfico en oportunidades comerciales reales.`;
     }
 
-    // Donut de Comunidad (100% basado en Bloque A Orgánico -> cero duplicados)
+    // Donut de Comunidad
     let startPct = 0;
     const donut = orgList.map((n) => {
       const pct =
@@ -897,24 +897,35 @@ export default function CeoDualMatrixReportPage() {
     const maxOrgReach = Math.max(...orgList.map((n) => Number(n.organic_reach || 0)), 1);
     const maxWebVisits = Math.max(...orgList.map((n) => Number(n.web_visits || 0)), 1);
 
-    // Diagnóstico Ejecutivo Automático
-    let generatedHeadline = `${draft.client_name}: Comunidad consolidada de ${formatCompact(
+    // Veredicto Ejecutivo Automático con YoY y Ticket Medio
+    let generatedHeadline = `${draft.client_name}: Comunidad de ${formatCompact(
       totalFollowers
     )} seguidores (${
       totalOrganicGrowth >= 0
         ? `+${formatCompact(totalOrganicGrowth)}`
         : formatCompact(totalOrganicGrowth)
-    } netos) y ${formatCompact(totalWebVisits)} visitas web orgánicas.`;
+    } netos) y ${formatCompact(totalWebVisits)} visitas web${
+      webVisitsYoY !== null
+        ? ` (${webVisitsYoY >= 0 ? `+${webVisitsYoY.toFixed(1)}%` : `${webVisitsYoY.toFixed(1)}%`} vs. año anterior)`
+        : ''
+    }.`;
 
     if (activeSpendCampaigns.length > 0) {
       generatedHeadline += ` En publicidad de pago (${formatEur(totalAdSpend)} invertidos), desglose por objetivo: ${objectiveGroups
         .map(
           (g) =>
             `${g.objective} → ${formatCompact(g.totalResults)} ${g.unit}${
-              g.cpr > 0 ? ` (${g.cpr.toFixed(2)} €/ud)` : ''
-            }`
+              g.cpr > 0 ? ` (CPA ${g.cpr.toFixed(2)} €` : ''
+            }${g.roas > 0 ? ` · ROAS ${g.roas.toFixed(2)}x` : ''}${
+              g.avgTicket > 0 ? ` · Ticket ${formatEur(g.avgTicket)}` : ''
+            }${g.cpr > 0 ? ')' : ''}`
         )
         .join(' · ')}.`;
+      if (revenueYoY !== null && totalRevenue > 0) {
+        generatedHeadline += ` La facturación atribuida crece ${
+          revenueYoY >= 0 ? `+${revenueYoY.toFixed(1)}%` : `${revenueYoY.toFixed(1)}%`
+        } interanual.`;
+      }
       if (leakingCampaigns.length > 0) {
         generatedHeadline += ` ALERTA DE FUGA: ${leakingCampaigns
           .map((c) => `${c.platform} (${c.campaign_label})`)
@@ -929,9 +940,11 @@ export default function CeoDualMatrixReportPage() {
       totalOrganicGrowth,
       totalOrganicReach,
       totalWebVisits,
+      webVisitsYoY,
       totalPaidReach,
       totalAdSpend,
       totalRevenue,
+      revenueYoY,
       objectiveGroups,
       profitableTitle,
       profitableWhy,
@@ -1074,7 +1087,7 @@ export default function CeoDualMatrixReportPage() {
           <div className="no-print bg-white p-5 rounded-3xl border-2 border-[#015b9d] shadow-md space-y-3 text-xs">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
               <h2 className="text-sm font-black text-[#081b2b]">
-                Estructura Sin Duplicidades: Bloque A (Orgánico por Red) vs. Bloque B (Campañas por Objetivo)
+                Guía Rápida: Estructura Ejecutiva con Comparativa Interanual (YoY) y Ticket Medio
               </h2>
               <button
                 type="button"
@@ -1109,7 +1122,7 @@ export default function CeoDualMatrixReportPage() {
         )}
 
         {/* ================================================================= */}
-        {/* EDITOR COMPLETO DE PLANTILLA (BLOQUE A + BLOQUE B SEPARADOS)      */}
+        {/* EDITOR COMPLETO DE PLANTILLA                                      */}
         {/* ================================================================= */}
         {editMode && (
           <form
@@ -1119,10 +1132,10 @@ export default function CeoDualMatrixReportPage() {
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
               <div>
                 <h2 className="text-sm font-black text-[#081b2b]">
-                  Editor de Plantilla · {selectedMonth}
+                  Editor de Plantilla Ejecutiva · {selectedMonth}
                 </h2>
                 <p className="text-[11px] text-slate-500">
-                  Bloque A mide comunidades (1 fila por red, sin duplicar) · Bloque B mide campañas de pago desglosadas por objetivo.
+                  Introduce las cifras sin puntos de millar (ej. 38689). Añade los datos del año anterior para activar el cálculo interanual (YoY %).
                 </p>
               </div>
               <button
@@ -1134,10 +1147,10 @@ export default function CeoDualMatrixReportPage() {
               </button>
             </div>
 
-            {/* 1. IDENTIDAD DEL CLIENTE, UMBRALES Y LOGO */}
+            {/* 1. IDENTIDAD DEL CLIENTE, UMBRALES Y COMPARATIVA AÑO ANTERIOR (YoY) */}
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
               <div className="font-black uppercase text-[#015b9d]">
-                1. Identidad Visual, Logo y Umbrales de Rentabilidad
+                1. Identidad Visual, Umbrales Rentables y Comparativa Año Anterior (YoY)
               </div>
               <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
                 <div className="md:col-span-2">
@@ -1217,6 +1230,57 @@ export default function CeoDualMatrixReportPage() {
                 </div>
               </div>
 
+              {/* Fila de Benchmark Interanual (Mismo mes del año pasado) */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 pt-2 border-t border-slate-200 items-end">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Visitas Web Año Anterior (YoY)
+                  </label>
+                  <input
+                    type="number"
+                    value={draft.prev_year_web_visits}
+                    onChange={(e) =>
+                      setDraft({ ...draft, prev_year_web_visits: Number(e.target.value) })
+                    }
+                    placeholder="Ej: 4210 (0 si no hay)"
+                    className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white font-bold text-right"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Facturación Ads Año Anterior (€)
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={draft.prev_year_revenue}
+                    onChange={(e) =>
+                      setDraft({ ...draft, prev_year_revenue: Number(e.target.value) })
+                    }
+                    placeholder="Ej: 34500 (0 si no hay)"
+                    className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white font-bold text-right"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Subtítulo Marca</label>
+                  <input
+                    type="text"
+                    value={draft.client_subtitle}
+                    onChange={(e) => setDraft({ ...draft, client_subtitle: e.target.value })}
+                    className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Etiqueta Tarjeta Web</label>
+                  <input
+                    type="text"
+                    value={draft.web_kpi_subtitle}
+                    onChange={(e) => setDraft({ ...draft, web_kpi_subtitle: e.target.value })}
+                    className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white font-semibold"
+                  />
+                </div>
+              </div>
+
               <div className="pt-2 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
                 <label className="inline-flex items-center gap-2 font-extrabold text-[#081b2b] cursor-pointer">
                   <input
@@ -1225,15 +1289,10 @@ export default function CeoDualMatrixReportPage() {
                     onChange={(e) => setDraft({ ...draft, auto_diagnosis: e.target.checked })}
                   />
                   <Sparkles className="w-3.5 h-3.5 text-[#ed6723]" />
-                  <span>Generar Veredicto Ejecutivo automáticamente</span>
+                  <span>
+                    Generar Veredicto Ejecutivo automáticamente (incluyendo YoY % y Ticket Medio)
+                  </span>
                 </label>
-                <input
-                  type="text"
-                  value={draft.client_subtitle}
-                  onChange={(e) => setDraft({ ...draft, client_subtitle: e.target.value })}
-                  placeholder="Subtítulo de marca"
-                  className="px-2 py-1 rounded border border-slate-300 bg-white text-[11px] font-semibold w-60"
-                />
               </div>
               {!draft.auto_diagnosis && (
                 <textarea
@@ -1246,7 +1305,7 @@ export default function CeoDualMatrixReportPage() {
               )}
             </div>
 
-            {/* 2A. BLOQUE A: PRESENCIA ORGÁNICA POR CANAL (1 FILA POR RED -> CERO DUPLICIDAD) */}
+            {/* 2A. BLOQUE A: PRESENCIA ORGÁNICA POR CANAL */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="font-black uppercase text-[#081b2b]">
@@ -1403,7 +1462,6 @@ export default function CeoDualMatrixReportPage() {
                             type="text"
                             value={camp.platform}
                             onChange={(e) => updatePaidField(camp.id, 'platform', e.target.value)}
-                            placeholder="Facebook / Instagram"
                             className="w-24 px-2 py-1 rounded border border-slate-300 font-black"
                           />
                         </td>
@@ -1414,7 +1472,6 @@ export default function CeoDualMatrixReportPage() {
                             onChange={(e) =>
                               updatePaidField(camp.id, 'campaign_label', e.target.value)
                             }
-                            placeholder="Ej: Mensajes / Tráfico"
                             className="w-32 px-2 py-1 rounded border border-slate-300 text-[11px] font-semibold"
                           />
                         </td>
@@ -1672,7 +1729,7 @@ export default function CeoDualMatrixReportPage() {
         )}
 
         {/* ===================================================================== */}
-        {/* DOCUMENTO EJECUTIVO VISUAL (A4 ONE-PAGER SIN DUPLICIDADES)            */}
+        {/* DOCUMENTO EJECUTIVO VISUAL (A4 ONE-PAGER PARA DIRECCIÓN GENERAL)      */}
         {/* ===================================================================== */}
         <div
           id="ceo-visual-report"
@@ -1705,9 +1762,19 @@ export default function CeoDualMatrixReportPage() {
             <h1 className="text-sm sm:text-base font-black tracking-wide uppercase">
               INFORME DE RENTABILIDAD Y MARKETING · {draft.client_name}
             </h1>
-            <span className="inline-block px-3 py-1 rounded-full bg-[#f5b514] text-black text-xs font-black">
-              {draft.period_label}
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              {(summary.webVisitsYoY !== null || summary.revenueYoY !== null) && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/15 text-white text-[11px] font-bold">
+                  <CalendarRange className="w-3 h-3 text-[#f5b514]" />
+                  {summary.revenueYoY !== null
+                    ? `Ventas YoY: ${summary.revenueYoY >= 0 ? '+' : ''}${summary.revenueYoY.toFixed(1)}%`
+                    : `Web YoY: ${summary.webVisitsYoY! >= 0 ? '+' : ''}${summary.webVisitsYoY!.toFixed(1)}%`}
+                </span>
+              )}
+              <span className="inline-block px-3 py-1 rounded-full bg-[#f5b514] text-black text-xs font-black">
+                {draft.period_label}
+              </span>
+            </div>
           </div>
 
           <div className="p-5 sm:p-7 space-y-5">
@@ -1777,7 +1844,7 @@ export default function CeoDualMatrixReportPage() {
                 <Filter className="w-5 h-5 text-[#ed6723] shrink-0 mt-0.5" />
                 <div>
                   <div className="text-[10px] font-black uppercase text-amber-900">
-                    Diagnóstico del Embudo (Captación vs. Cierre)
+                    Diagnóstico del Embudo y Ticket Medio
                   </div>
                   <div className="text-xs font-black text-amber-950 mt-0.5">
                     {summary.funnelTitle}
@@ -1850,8 +1917,24 @@ export default function CeoDualMatrixReportPage() {
                   <div className="text-[10px] font-black uppercase text-slate-500">
                     Visitas a la Web
                   </div>
-                  <div className="text-2xl sm:text-3xl font-black text-black mt-0.5">
-                    {formatCompact(summary.totalWebVisits)}
+                  <div className="flex items-baseline gap-1.5 mt-0.5">
+                    <span className="text-2xl sm:text-3xl font-black text-black">
+                      {formatCompact(summary.totalWebVisits)}
+                    </span>
+                    {summary.webVisitsYoY !== null && (
+                      <span
+                        className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
+                          summary.webVisitsYoY >= 0
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-rose-100 text-rose-800'
+                        }`}
+                      >
+                        {summary.webVisitsYoY >= 0
+                          ? `+${summary.webVisitsYoY.toFixed(0)}%`
+                          : `${summary.webVisitsYoY.toFixed(0)}%`}{' '}
+                        YoY
+                      </span>
+                    )}
                   </div>
                   <div className="text-[11px] font-extrabold text-[#015b9d] mt-0.5">
                     {draft.web_kpi_subtitle}
@@ -1863,7 +1946,7 @@ export default function CeoDualMatrixReportPage() {
               </div>
             </div>
 
-            {/* 1A. TABLA ORGÁNICA POR CANAL (1 FILA POR RED -> CERO DUPLICIDADES) */}
+            {/* 1A. TABLA ORGÁNICA POR CANAL */}
             <div>
               <h2 className="text-xs font-black uppercase tracking-wider text-black mb-2">
                 1A. Rendimiento Orgánico y Comunidad por Canal ({summary.orgList.length} activos)
@@ -1941,12 +2024,12 @@ export default function CeoDualMatrixReportPage() {
               </div>
             </div>
 
-            {/* 1B. TABLA PAID MEDIA DESGLOSADA POR OBJETIVO (SIN MEZCLAR CLICS CON MENSAJES/VENTAS) */}
+            {/* 1B. TABLA PAID MEDIA DESGLOSADA POR OBJETIVO + TICKET MEDIO */}
             {draft.show_paid_section && summary.evaluatedPaid.length > 0 && (
               <div className="space-y-2.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h2 className="text-xs font-black uppercase tracking-wider text-black">
-                    1B. Campañas Paid Media por Objetivo y Rentabilidad (CPA Máx:{' '}
+                    1B. Campañas Paid Media por Objetivo, Rentabilidad y Ticket Medio (CPA Máx:{' '}
                     {draft.target_max_cpa} € · ROAS Meta: {draft.target_min_roas}x)
                   </h2>
                 </div>
@@ -1959,8 +2042,8 @@ export default function CeoDualMatrixReportPage() {
                         <th className="py-2 px-2.5">Objetivo</th>
                         <th className="py-2 px-2.5 text-center">Alcance Paid</th>
                         <th className="py-2 px-2.5 text-center">Inversión</th>
-                        <th className="py-2 px-2.5 text-center">Resultados s/ Objetivo</th>
-                        <th className="py-2 px-2.5 text-center">Coste / Ud (CPA)</th>
+                        <th className="py-2 px-2.5 text-center">Resultados / Ingresos</th>
+                        <th className="py-2 px-2.5 text-center">CPA / Ticket Medio</th>
                         <th className="py-2 px-3 text-center">Veredicto CEO</th>
                       </tr>
                     </thead>
@@ -2007,7 +2090,7 @@ export default function CeoDualMatrixReportPage() {
                               </span>
                               {camp.revenue > 0 && (
                                 <div className="text-[10px] text-emerald-700">
-                                  Ventas: {formatEur(camp.revenue)}
+                                  Caja: {formatEur(camp.revenue)}
                                 </div>
                               )}
                             </td>
@@ -2020,10 +2103,15 @@ export default function CeoDualMatrixReportPage() {
                                       : 'text-emerald-700'
                                   }`}
                                 >
-                                  {camp.cpa.toFixed(2)} €
+                                  CPA: {camp.cpa.toFixed(2)} €
                                 </span>
                               ) : (
                                 '—'
+                              )}
+                              {camp.avgTicket > 0 && (
+                                <div className="text-[10px] font-extrabold text-[#015b9d]">
+                                  Ticket: {formatEur(camp.avgTicket)}
+                                </div>
                               )}
                               {camp.roas > 0 && (
                                 <div className="text-[10px] font-bold text-slate-600">
@@ -2053,7 +2141,13 @@ export default function CeoDualMatrixReportPage() {
                   <div className="rounded-2xl bg-slate-900 text-white p-3.5 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2 text-xs font-black uppercase text-[#f5b514]">
                       <DollarSign className="w-4 h-4" />
-                      <span>Totales Separados por Objetivo ({formatEur(summary.totalAdSpend)} inv.):</span>
+                      <span>
+                        Totales por Objetivo ({formatEur(summary.totalAdSpend)} inv.
+                        {summary.totalRevenue > 0
+                          ? ` · ${formatEur(summary.totalRevenue)} caja`
+                          : ''}
+                        ):
+                      </span>
                     </div>
                     <div className="flex flex-wrap gap-3">
                       {summary.objectiveGroups.map((grp) => (
@@ -2075,10 +2169,11 @@ export default function CeoDualMatrixReportPage() {
                           {grp.cpr > 0 && (
                             <div className="text-right border-l border-white/20 pl-2.5">
                               <span className="text-[9px] uppercase text-slate-400 block">
-                                Coste/ud
+                                CPA {grp.avgTicket > 0 ? '/ Ticket' : ''}
                               </span>
                               <span className="font-black text-emerald-400">
                                 {grp.cpr.toFixed(2)} €
+                                {grp.avgTicket > 0 ? ` · ${formatEur(grp.avgTicket)}` : ''}
                               </span>
                             </div>
                           )}
