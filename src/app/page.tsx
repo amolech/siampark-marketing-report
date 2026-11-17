@@ -36,13 +36,92 @@ import {
   Briefcase,
   Clock,
   Scale,
+  BookOpen,
+  Info,
 } from 'lucide-react';
 
 export type ObjectiveCategory =
-  | 'Tráfico Web'
-  | 'Mensajes / Leads'
-  | 'Ventas / Compras'
-  | 'Alcance / Branding';
+  | 'Reconocimiento / Alcance'
+  | 'Tráfico Web / Visitas'
+  | 'Interacción / Comunidad'
+  | 'Contactos / Mensajes (Leads)'
+  | 'Ventas / Conversiones';
+
+interface ObjectiveDefinition {
+  unit: string;
+  shortLabel: string;
+  conceptDefinition: string;
+  ceoExplanation: string;
+  businessPriority: number;
+}
+
+const OBJECTIVE_DICTIONARY: Record<ObjectiveCategory, ObjectiveDefinition> = {
+  'Reconocimiento / Alcance': {
+    unit: 'impactos',
+    shortLabel: 'Visibilidad masiva de marca',
+    conceptDefinition:
+      'Maximiza el número de personas únicas que ven el anuncio en una zona o segmento, priorizando cobertura y recuerdo de marca frente a la acción inmediata.',
+    ceoExplanation:
+      'Objetivo de visibilidad: busca mostrar la marca al mayor número posible de potenciales clientes al menor coste por impacto.',
+    businessPriority: 1,
+  },
+  'Interacción / Comunidad': {
+    unit: 'interacciones',
+    shortLabel: 'Participación y audiencia propia',
+    conceptDefinition:
+      'Fomenta acciones dentro de la propia red social (seguidores, guardados, comentarios, reproducciones de vídeo) para construir una audiencia fiel.',
+    ceoExplanation:
+      'Objetivo de fidelización y comunidad: amplía el público propio de la marca para reducir la dependencia futura de la publicidad de pago.',
+    businessPriority: 2,
+  },
+  'Tráfico Web / Visitas': {
+    unit: 'clics',
+    shortLabel: 'Atracción de visitas externas',
+    conceptDefinition:
+      'Dirige usuarios interesados desde el anuncio hacia una página web, tienda online, catálogo o ficha de reservas externa.',
+    ceoExplanation:
+      'Objetivo de atracción: mide cuántas personas hacen clic para entrar en los canales digitales propios de la empresa.',
+    businessPriority: 3,
+  },
+  'Contactos / Mensajes (Leads)': {
+    unit: 'mensajes',
+    shortLabel: 'Generación de oportunidades comerciales',
+    conceptDefinition:
+      'Capta datos de contacto (formularios, llamadas) o inicia conversaciones directas (WhatsApp, mensajes) con personas interesadas para su cierre comercial.',
+    ceoExplanation:
+      'Objetivo comercial: genera consultas directas de clientes interesados listos para ser atendidos y convertidos en venta.',
+    businessPriority: 4,
+  },
+  'Ventas / Conversiones': {
+    unit: 'ventas',
+    shortLabel: 'Transacciones y cierre directo',
+    conceptDefinition:
+      'Optimiza la entrega del anuncio hacia usuarios con alta probabilidad de completar una compra, pago online, reserva confirmada o suscripción.',
+    ceoExplanation:
+      'Objetivo de facturación directa: mide compras cerradas atribuidas al anuncio y el retorno económico obtenido por cada euro invertido.',
+    businessPriority: 5,
+  },
+};
+
+const ALL_OBJECTIVES: ObjectiveCategory[] = [
+  'Reconocimiento / Alcance',
+  'Tráfico Web / Visitas',
+  'Interacción / Comunidad',
+  'Contactos / Mensajes (Leads)',
+  'Ventas / Conversiones',
+];
+
+function normalizeObjectiveCategory(raw: string): ObjectiveCategory {
+  if (raw === 'Tráfico Web' || raw === 'Tráfico Web / Visitas') return 'Tráfico Web / Visitas';
+  if (raw === 'Mensajes / Leads' || raw === 'Contactos / Mensajes (Leads)')
+    return 'Contactos / Mensajes (Leads)';
+  if (raw === 'Ventas / Compras' || raw === 'Ventas / Conversiones')
+    return 'Ventas / Conversiones';
+  if (raw === 'Alcance / Branding' || raw === 'Reconocimiento / Alcance')
+    return 'Reconocimiento / Alcance';
+  if (raw === 'Interacción / Comunidad') return 'Interacción / Comunidad';
+  return 'Tráfico Web / Visitas';
+}
 
 interface OrganicChannelRow {
   id: string;
@@ -104,6 +183,7 @@ interface ClientTemplateReport {
   prev_year_revenue: number;
   auto_diagnosis: boolean;
   custom_headline: string;
+  show_financial_section: boolean;
   show_paid_section: boolean;
   organic_channels: OrganicChannelRow[];
   paid_campaigns: PaidCampaignRow[];
@@ -113,10 +193,7 @@ interface ClientTemplateReport {
   directives: CeoDirective[];
 }
 
-const SIAM_LOGO_URL =
-  'https://siampark.net/templates/yootheme/cache/d1/siam-park-tenerife-main-logo-d1ab9a93.webp';
-
-const STORAGE_KEY = 'agency_ceo_clean_spanish_v14';
+const STORAGE_KEY = 'agency_ceo_universal_template_v20';
 
 const PRESET_COLORS = [
   '#0f172a',
@@ -130,305 +207,302 @@ const PRESET_COLORS = [
   '#0891b2',
 ];
 
-const OBJECTIVE_UNIT_DEFAULTS: Record<ObjectiveCategory, string> = {
-  'Tráfico Web': 'clics',
-  'Mensajes / Leads': 'mensajes',
-  'Ventas / Compras': 'ventas',
-  'Alcance / Branding': 'impactos',
-};
+const KPI_LEGEND_ITEMS = [
+  {
+    category: '1. Salud Financiera y Rentabilidad',
+    color: '#015b9d',
+    items: [
+      {
+        name: 'Retorno Caja Total (x)',
+        formula: 'Facturación Total Caja ÷ Inversión Publicitaria',
+        meaning:
+          'Indica cuántos euros entran en la caja del negocio por cada 1 € invertido en publicidad.',
+      },
+      {
+        name: 'Coste Cliente Nuevo (CAC)',
+        formula: 'Inversión Publicitaria ÷ Clientes Nuevos Captados',
+        meaning:
+          'Cuánto cuesta en publicidad conseguir un cliente nuevo real durante el mes.',
+      },
+      {
+        name: 'Rentabilidad Cliente (LTV / CAC)',
+        formula: 'Valor Total por Cliente ÷ Coste Cliente Nuevo',
+        meaning:
+          'Cuántas veces se multiplica el coste de captación gracias a lo que gasta el cliente en toda su estancia (saludable ≥ x3).',
+      },
+      {
+        name: 'Beneficio Neto / Euro',
+        formula: '(Ingresos × Margen Bruto %) ÷ Inversión Publicitaria',
+        meaning:
+          'Beneficio limpio que queda por cada euro invertido tras descontar los costes operativos directos del servicio o producto.',
+      },
+      {
+        name: 'Plazo de Recuperación (Payback)',
+        formula: 'Coste Cliente Nuevo ÷ Beneficio Mensual por Cliente',
+        meaning:
+          'Tiempo en meses que tarda el negocio en recuperar el dinero gastado para captar a un cliente nuevo.',
+      },
+      {
+        name: 'Tráfico Gratuito (%)',
+        formula: '(Visitas Web Orgánicas ÷ Visitas Web Totales) × 100',
+        meaning:
+          'Porcentaje de visitas que llegan a la web sin pagar anuncios (redes orgánicas, buscadores o tráfico directo).',
+      },
+    ],
+  },
+  {
+    category: '2. Tracción Digital y Audiencia',
+    color: '#16a34a',
+    items: [
+      {
+        name: 'Comunidad Total y Crecimiento Mes',
+        formula: 'Seguidores Totales · (Altas − Bajas del mes)',
+        meaning:
+          'Tamaño total de la audiencia propia en redes sociales y saldo neto de nuevos seguidores ganados dentro del mes analizado.',
+      },
+      {
+        name: 'Visualizaciones Gratuitas',
+        formula: 'Suma de impresiones orgánicas sin promoción',
+        meaning:
+          'Veces que se mostraron los contenidos de la marca de forma natural sin invertir presupuesto publicitario.',
+      },
+      {
+        name: 'Alcance Publicidad',
+        formula: 'Personas únicas alcanzadas en campañas de pago',
+        meaning:
+          'Número de usuarios distintos impactados por los anuncios activos en el periodo.',
+      },
+      {
+        name: 'Visitas Web Totales',
+        formula: 'Visitas Web Orgánicas + Clics de Tráfico de Pago',
+        meaning:
+          'Tráfico total real que entró en la web o página de reservas combinando canales gratuitos y anuncios.',
+      },
+    ],
+  },
+  {
+    category: '3. Eficiencia de Campañas y Cierre',
+    color: '#d97706',
+    items: [
+      {
+        name: 'Conversión a Cliente (%)',
+        formula: '(Clientes Nuevos Captados ÷ Visitas Web Totales) × 100',
+        meaning:
+          'Porcentaje de visitantes web que terminan comprando o dándose de alta como clientes nuevos.',
+      },
+      {
+        name: 'Coste por Resultado / Unidad',
+        formula: 'Inversión de la Campaña ÷ Resultados Obtenidos',
+        meaning:
+          'Precio medio pagado por cada clic, mensaje, contacto o venta según el objetivo configurado en esa campaña.',
+      },
+      {
+        name: 'Decisión: ESCALAR / OPTIMIZAR / CORTAR',
+        formula: 'Comparación automática vs. Coste Máx. y Retorno Meta',
+        meaning:
+          'ESCALAR: cumple objetivos y admite más presupuesto. OPTIMIZAR: rendimiento medio. FUGA/CORTAR: supera el límite de coste rentable.',
+      },
+    ],
+  },
+];
 
-const DEFAULT_SIAM_TEMPLATE: ClientTemplateReport = {
-  client_name: 'SIAM PARK TENERIFE',
-  client_subtitle: 'THE WATER KINGDOM · INFORME DE DIRECCIÓN GENERAL',
-  logo_data_url: SIAM_LOGO_URL,
-  web_kpi_subtitle: 'Tráfico directo hacia web y taquilla',
-  report_month: '2026-10',
-  period_label: 'Octubre 2026 (01 – 31 Oct)',
-  target_max_cpa: 15,
+const createBlankClientTemplate = (month: string): ClientTemplateReport => ({
+  client_name: 'NOMBRE DE LA EMPRESA',
+  client_subtitle: 'INFORME DE DIRECCIÓN GENERAL · RENTABILIDAD Y CRECIMIENTO',
+  logo_data_url: '',
+  web_kpi_subtitle: 'Visitas hacia canales digitales y conversión',
+  report_month: month,
+  period_label: `Cierre Mensual · ${month}`,
+  target_max_cpa: 1.5,
   target_min_roas: 4.0,
-  total_business_revenue: 68500,
-  new_customers_acquired: 735,
-  customer_ltv: 95,
-  gross_margin_pct: 72,
-  avg_monthly_margin_per_customer: 42,
-  prev_year_web_visits: 4210,
-  prev_year_revenue: 34500,
+  total_business_revenue: 25000,
+  new_customers_acquired: 150,
+  customer_ltv: 180,
+  gross_margin_pct: 65,
+  avg_monthly_margin_per_customer: 40,
+  prev_year_web_visits: 0,
+  prev_year_revenue: 0,
   auto_diagnosis: true,
   custom_headline: '',
+  show_financial_section: true,
   show_paid_section: true,
   organic_channels: [
     {
-      id: 'org-tiktok',
-      name: 'TikTok',
-      color: '#0f172a',
-      followers_total: 20350,
-      organic_growth_net: 1250,
-      organic_reach: 163620,
-      web_visits: 640,
-    },
-    {
       id: 'org-ig',
-      name: 'Instagram',
+      name: 'Instagram (Orgánico)',
       color: '#e1306c',
-      followers_total: 218770,
-      organic_growth_net: 441,
-      organic_reach: 1690000,
-      web_visits: 1120,
+      followers_total: 4500,
+      organic_growth_net: 210,
+      organic_reach: 48000,
+      web_visits: 320,
     },
     {
       id: 'org-fb',
-      name: 'Facebook',
+      name: 'Facebook (Orgánico)',
       color: '#1877f2',
-      followers_total: 352290,
-      organic_growth_net: 424,
-      organic_reach: 736800,
-      web_visits: 2453,
+      followers_total: 2800,
+      organic_growth_net: 65,
+      organic_reach: 22000,
+      web_visits: 180,
     },
     {
-      id: 'org-li',
-      name: 'LinkedIn',
-      color: '#0a66c2',
-      followers_total: 3200,
-      organic_growth_net: 85,
-      organic_reach: 14200,
-      web_visits: 190,
-    },
-    {
-      id: 'org-yt',
-      name: 'YouTube',
-      color: '#dc2626',
-      followers_total: 9610,
-      organic_growth_net: 48,
-      organic_reach: 46850,
-      web_visits: 520,
+      id: 'org-seo',
+      name: 'Buscadores / Web Directa',
+      color: '#16a34a',
+      followers_total: 0,
+      organic_growth_net: 0,
+      organic_reach: 15000,
+      web_visits: 950,
     },
   ],
   paid_campaigns: [
     {
-      id: 'paid-google-search',
+      id: 'paid-ventas',
       platform: 'Google Ads',
-      campaign_label: 'Búsquedas Marca + Entradas UK/ES',
+      campaign_label: 'Búsquedas de Compra Directa',
       color: '#16a34a',
-      objective_type: 'Ventas / Compras',
-      result_unit_label: 'entradas',
-      paid_reach: 42000,
-      ad_spend: 2800,
-      results_count: 540,
-      revenue: 29700,
+      objective_type: 'Ventas / Conversiones',
+      result_unit_label: 'ventas',
+      paid_reach: 18500,
+      ad_spend: 650,
+      results_count: 85,
+      revenue: 9800,
     },
     {
-      id: 'paid-meta-sales',
+      id: 'paid-leads',
       platform: 'Meta Ads (FB/IG)',
-      campaign_label: 'Venta Directa Taquilla + VIP',
+      campaign_label: 'Captación de Consultas y Mensajes',
       color: '#1877f2',
-      objective_type: 'Ventas / Compras',
-      result_unit_label: 'entradas',
-      paid_reach: 64000,
-      ad_spend: 1450,
-      results_count: 195,
-      revenue: 11850,
+      objective_type: 'Contactos / Mensajes (Leads)',
+      result_unit_label: 'mensajes',
+      paid_reach: 32000,
+      ad_spend: 420,
+      results_count: 340,
+      revenue: 0,
+    },
+    {
+      id: 'paid-trafico',
+      platform: 'Meta Ads (FB/IG)',
+      campaign_label: 'Visitas a Catálogo / Landing',
+      color: '#e1306c',
+      objective_type: 'Tráfico Web / Visitas',
+      result_unit_label: 'clics',
+      paid_reach: 45000,
+      ad_spend: 280,
+      results_count: 2400,
+      revenue: 0,
     },
   ],
   markets: [
     {
       id: 'mkt-1',
-      group_label: 'Facebook (Turismo Internacional)',
-      market_a_name: 'Reino Unido',
-      market_a_pct: 30.8,
-      market_a_color: '#1877f2',
-      market_b_name: 'España',
-      market_b_pct: 27.52,
+      group_label: 'Distribución por Línea de Negocio / Sede',
+      market_a_name: 'Línea Principal',
+      market_a_pct: 65,
+      market_a_color: '#015b9d',
+      market_b_name: 'Segunda Línea',
+      market_b_pct: 35,
       market_b_color: '#f5b514',
     },
     {
       id: 'mkt-2',
-      group_label: 'Instagram (Nacional / Local)',
-      market_a_name: 'España',
-      market_a_pct: 44.58,
-      market_a_color: '#e1306c',
-      market_b_name: 'Reino Unido',
-      market_b_pct: 19.48,
-      market_b_color: '#015b9d',
+      group_label: 'Perfil de Demanda / Canal de Cierre',
+      market_a_name: 'Cierre Digital / Online',
+      market_a_pct: 78,
+      market_a_color: '#16a34a',
+      market_b_name: 'Atención Directa / Presencial',
+      market_b_pct: 22,
+      market_b_color: '#0f172a',
     },
   ],
-  competitive_note_title: 'Posicionamiento frente a Competencia',
+  competitive_note_title: 'Observación Estratégica del Negocio',
   competitive_note_text:
-    'Superamos a Waterbom Bali en Facebook (352,3K vs. 334,1K) y multiplicamos x41 la audiencia YouTube de Aqualand Costa Adeje.',
+    'Resumen comparativo frente al sector, estacionalidad del periodo o ventajas competitivas detectadas.',
   directives: [
     {
       id: 'dir-1',
-      area: '1. Alianzas Talento VIP',
+      area: '1. Escalar Campañas de Conversión',
       status: 'ESCALAR',
       decision:
-        'Programar 2 colaboraciones mensuales con creadores de España y Reino Unido tras el pico de alcance orgánico.',
-      expected_impact: '+250K impactos gratuitos al mes.',
+        'Incrementar presupuesto en las líneas que superan el retorno mínimo objetivo manteniendo el coste por adquisición bajo control.',
+      expected_impact: '+25% facturación atribuida.',
     },
     {
       id: 'dir-2',
-      area: '2. Mercado Británico Invierno',
-      status: 'ESCALAR',
+      area: '2. Trazabilidad en CRM / Gestión',
+      status: 'CORREGIR',
       decision:
-        'Reforzar campañas de Facebook y YouTube segmentadas a Reino Unido (30,8% de audiencia FB) para temporada de invierno.',
-      expected_impact: 'Aumento de reservas internacionales.',
+        'Registrar el origen de cada cliente nuevo en el sistema de gestión interno para vincular cada venta con su canal de captación.',
+      expected_impact: '100% control de rentabilidad por canal.',
     },
     {
       id: 'dir-3',
-      area: '3. Enlaces Directos a Taquilla',
-      status: 'CORREGIR',
-      decision:
-        'Activar enlaces directos con seguimiento en Instagram, TikTok y LinkedIn para igualar la tracción de Facebook (2.453 visitas).',
-      expected_impact: '+60% tráfico web desde redes sociales.',
-    },
-  ],
-};
-
-const createBlankClientTemplate = (month: string): ClientTemplateReport => ({
-  client_name: 'NUEVO CLIENTE',
-  client_subtitle: 'INFORME DE DIRECCIÓN GENERAL · RENTABILIDAD Y CRECIMIENTO',
-  logo_data_url: '',
-  web_kpi_subtitle: 'Visitas hacia web y reservas',
-  report_month: month,
-  period_label: `Cierre Mensual · ${month}`,
-  target_max_cpa: 0.15,
-  target_min_roas: 4.0,
-  total_business_revenue: 13208.31,
-  new_customers_acquired: 175,
-  customer_ltv: 125,
-  gross_margin_pct: 65,
-  avg_monthly_margin_per_customer: 17,
-  prev_year_web_visits: 0,
-  prev_year_revenue: 0,
-  auto_diagnosis: true,
-  custom_headline: '',
-  show_paid_section: true,
-  organic_channels: [
-    {
-      id: 'org-fb',
-      name: 'Facebook (Orgánico)',
-      color: '#1877f2',
-      followers_total: 0,
-      organic_growth_net: 0,
-      organic_reach: 0,
-      web_visits: 0,
-    },
-    {
-      id: 'org-ig',
-      name: 'Instagram (Orgánico)',
-      color: '#e1306c',
-      followers_total: 0,
-      organic_growth_net: 0,
-      organic_reach: 0,
-      web_visits: 0,
-    },
-  ],
-  paid_campaigns: [
-    {
-      id: 'paid-fb-msg',
-      platform: 'Facebook Ads',
-      campaign_label: 'Campaña Mensajes',
-      color: '#1877f2',
-      objective_type: 'Mensajes / Leads',
-      result_unit_label: 'mensajes',
-      paid_reach: 0,
-      ad_spend: 0,
-      results_count: 0,
-      revenue: 0,
-    },
-    {
-      id: 'paid-ig-traf',
-      platform: 'Instagram Ads',
-      campaign_label: 'Campaña Tráfico Web',
-      color: '#e1306c',
-      objective_type: 'Tráfico Web',
-      result_unit_label: 'clics',
-      paid_reach: 0,
-      ad_spend: 0,
-      results_count: 0,
-      revenue: 0,
-    },
-  ],
-  markets: [
-    {
-      id: 'mkt-local',
-      group_label: 'Distribución por Sede / Zona',
-      market_a_name: 'Sede Principal',
-      market_a_pct: 65,
-      market_a_color: '#015b9d',
-      market_b_name: 'Segunda Sede',
-      market_b_pct: 35,
-      market_b_color: '#f5b514',
-    },
-  ],
-  competitive_note_title: 'Observación Estratégica del Sector',
-  competitive_note_text:
-    'Escribe aquí la comparativa frente a competidores locales o el benchmark del sector del cliente.',
-  directives: [
-    {
-      id: 'dir-new-1',
-      area: '1. Escalar Canal Más Rentable',
-      status: 'ESCALAR',
-      decision: 'Reasignar presupuesto hacia las campañas con menor coste por cliente o contacto.',
-      expected_impact: '+25% conversiones manteniendo gasto.',
-    },
-    {
-      id: 'dir-new-2',
-      area: '2. Trazabilidad en Sistema de Reservas',
-      status: 'CORREGIR',
-      decision:
-        'Etiquetar el origen de cada venta (Instagram, Facebook, Google, WhatsApp) en el software de gestión.',
-      expected_impact: '100% control de ingresos por canal.',
-    },
-    {
-      id: 'dir-new-3',
-      area: '3. Crecimiento Orgánico',
+      area: '3. Impulso de Comunidad Orgánica',
       status: 'MANTENER',
       decision:
-        'Mantener publicaciones de prueba social y casos reales para reducir dependencia de anuncios.',
-      expected_impact: 'Menor coste de captación global.',
+        'Mantener cadencia de contenidos de valor y casos de éxito para sostener el flujo de visitas gratuitas sin coste publicitario.',
+      expected_impact: 'Menor coste medio de captación.',
     },
   ],
 });
 
 const EXTRACTION_PLATFORM_GUIDE = [
   {
-    platform: '1. Meta Business Suite (Solo Orgánico)',
+    platform: '1. Redes Sociales (Solo Tráfico Orgánico)',
     color: '#e1306c',
     steps: [
-      'Entra en Meta Business Suite → "Estadísticas" → "Resultados".',
-      'Comunidad Total: En "Público", anota seguidores actuales de Facebook e Instagram.',
-      'Crecimiento Orgánico: En "Resultados" → "Seguidores", anota las altas netas del mes.',
-      'Visitas Web Orgánicas: Al total de "Clics en el enlace" réstale los clics de tus anuncios en Meta Ads para no duplicar tráfico de pago.',
+      'Accede al panel de estadísticas de cada red social (Meta Business Suite, TikTok Analytics, LinkedIn).',
+      'Comunidad Total: Anota los seguidores actuales al cierre del mes.',
+      'Crecimiento Orgánico: Anota el saldo neto de nuevos seguidores del periodo.',
+      'Visitas Web Gratuitas: Resta los clics de anuncios de pago al total de clics en enlace para no duplicar tráfico.',
     ],
   },
   {
-    platform: '2. Meta Ads Manager (Anuncios de Pago)',
+    platform: '2. Plataformas de Publicidad (Ads)',
     color: '#1877f2',
     steps: [
-      'Abre Informes Publicitarios → selecciona el mes exacto arriba a la derecha.',
-      'Usa desglose por "Plataforma" y "Objetivo" para separar Tráfico Web de Mensajes/WhatsApp.',
-      'Copia Alcance, Importe gastado (€) y Resultados (sin puntos de millar).',
+      'Filtra por el mes exacto en Meta Ads, Google Ads, TikTok Ads o LinkedIn Ads.',
+      'Agrupa las campañas según su Objetivo Universal (Alcance, Tráfico, Interacción, Contactos o Ventas).',
+      'Copia Personas Alcanzadas, Inversión (€), Resultados obtenidos y Ventas atribuidas (€).',
     ],
   },
   {
-    platform: '3. Google (Analytics 4, Search Console y Ads)',
+    platform: '3. Analítica Web y Buscadores',
     color: '#16a34a',
     steps: [
-      'Google Search (SEO): Search Console → "Rendimiento" → copia Impresiones y Clics totales.',
-      'Tráfico Directo / Referidos: Google Analytics 4 → "Adquisición de tráfico" → sesiones de Direct y Referral.',
-      'Google Ads: Campañas → copia Impresiones, Coste (€), Conversiones y Valor (€).',
+      'Google Search Console: Consulta impresiones y clics orgánicos desde buscadores.',
+      'Google Analytics (GA4): Revisa sesiones de tráfico Directo y Referidos sin campaña.',
+      'Integra estas fuentes en la tabla 2A para reflejar todo el tráfico gratuito de la empresa.',
     ],
   },
   {
-    platform: '4. Caja Real y Clientes (CRM / TIMP)',
+    platform: '4. Facturación Real y Clientes (Opcional)',
     color: '#0f172a',
     steps: [
-      'Facturación Total Caja (€): Suma el cierre mensual bruto de Contabilidad en todas las sedes.',
-      'Clientes Nuevos Captados: Ve a Estadísticas → Clientes → "Flujo de clientes" y suma las altas del mes.',
-      'Valor Total por Cliente (€): Estadísticas → Negocio → "Rentabilidad media por cliente" (último mes consolidado).',
-      'Beneficio Mensual/Cliente (€): "Ingreso medio por cliente" × Margen Bruto (%).',
+      'Si el cliente comparte su cierre de caja, activa "Datos de Caja: Visibles" en la barra superior.',
+      'Facturación Total Caja (€): Ingresos totales brutos cerrados en el sistema de facturación o CRM.',
+      'Si el cliente aún no comparte datos de caja, apaga el botón "Datos de Caja" para ocultar el bloque financiero.',
     ],
   },
 ];
+
+function sanitizeLoadedReport(raw: ClientTemplateReport, fallbackMonth: string): ClientTemplateReport {
+  const base = createBlankClientTemplate(fallbackMonth);
+  return {
+    ...base,
+    ...raw,
+    show_financial_section:
+      typeof raw.show_financial_section === 'boolean' ? raw.show_financial_section : true,
+    paid_campaigns: (raw.paid_campaigns || base.paid_campaigns).map((c) => {
+      const normalizedObj = normalizeObjectiveCategory(String(c.objective_type || ''));
+      return {
+        ...c,
+        objective_type: normalizedObj,
+        result_unit_label: c.result_unit_label || OBJECTIVE_DICTIONARY[normalizedObj].unit,
+      };
+    }),
+  };
+}
 
 function formatCompact(val: number): string {
   if (val >= 1_000_000) return `${(val / 1_000_000).toFixed(2)}M`;
@@ -452,11 +526,12 @@ function calcYoY(current: number, previous: number): number | null {
 export default function CeoExecutiveCleanReportPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>('2026-10');
   const [reportsMap, setReportsMap] = useState<Record<string, ClientTemplateReport>>({
-    '2026-10': DEFAULT_SIAM_TEMPLATE,
+    '2026-10': createBlankClientTemplate('2026-10'),
   });
-  const [draft, setDraft] = useState<ClientTemplateReport>(DEFAULT_SIAM_TEMPLATE);
+  const [draft, setDraft] = useState<ClientTemplateReport>(createBlankClientTemplate('2026-10'));
   const [editMode, setEditMode] = useState<boolean>(false);
   const [showGuide, setShowGuide] = useState<boolean>(false);
+  const [showKpiLegend, setShowKpiLegend] = useState<boolean>(false);
   const [logoError, setLogoError] = useState<boolean>(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -468,9 +543,16 @@ export default function CeoExecutiveCleanReportPage() {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Record<string, ClientTemplateReport>;
-        const merged = { '2026-10': DEFAULT_SIAM_TEMPLATE, ...parsed };
-        setReportsMap(merged);
-        if (merged['2026-10']) setDraft(merged['2026-10']);
+        const sanitizedMap: Record<string, ClientTemplateReport> = {};
+        Object.keys(parsed).forEach((k) => {
+          sanitizedMap[k] = sanitizeLoadedReport(parsed[k], k);
+        });
+        if (Object.keys(sanitizedMap).length > 0) {
+          setReportsMap(sanitizedMap);
+          const firstKey = sanitizedMap['2026-10'] ? '2026-10' : Object.keys(sanitizedMap)[0];
+          setSelectedMonth(firstKey);
+          setDraft(sanitizedMap[firstKey]);
+        }
       }
     } catch {
       // Ignorar
@@ -554,10 +636,7 @@ export default function CeoExecutiveCleanReportPage() {
         if (firstKey && imported[firstKey]) {
           setLogoError(false);
           setSelectedMonth(firstKey);
-          const loaded = {
-            ...createBlankClientTemplate(firstKey),
-            ...imported[firstKey],
-          };
+          const loaded = sanitizeLoadedReport(imported[firstKey], firstKey);
           setDraft(loaded);
           const merged = { ...reportsMap, [firstKey]: loaded };
           setReportsMap(merged);
@@ -616,17 +695,18 @@ export default function CeoExecutiveCleanReportPage() {
   // CRUD Bloque B
   const handleAddPaid = () => {
     const nextColor = PRESET_COLORS[draft.paid_campaigns.length % PRESET_COLORS.length];
+    const defaultObj: ObjectiveCategory = 'Ventas / Conversiones';
     setDraft((prev) => ({
       ...prev,
       paid_campaigns: [
         ...prev.paid_campaigns,
         {
           id: `paid-${Date.now()}`,
-          platform: 'Meta Ads',
+          platform: 'Plataforma Ads',
           campaign_label: 'Nueva Campaña',
           color: nextColor,
-          objective_type: 'Ventas / Compras',
-          result_unit_label: 'ventas',
+          objective_type: defaultObj,
+          result_unit_label: OBJECTIVE_DICTIONARY[defaultObj].unit,
           paid_reach: 0,
           ad_spend: 0,
           results_count: 0,
@@ -653,11 +733,11 @@ export default function CeoExecutiveCleanReportPage() {
       paid_campaigns: prev.paid_campaigns.map((camp) => {
         if (camp.id !== id) return camp;
         if (field === 'objective_type') {
-          const objCat = value as ObjectiveCategory;
+          const objCat = normalizeObjectiveCategory(String(value));
           return {
             ...camp,
             objective_type: objCat,
-            result_unit_label: OBJECTIVE_UNIT_DEFAULTS[objCat],
+            result_unit_label: OBJECTIVE_DICTIONARY[objCat].unit,
           };
         }
         return { ...camp, [field]: value };
@@ -739,7 +819,7 @@ export default function CeoExecutiveCleanReportPage() {
   };
 
   // =========================================================================
-  // CÁLCULO FINANCIERO EN LENGUAJE EJECUTIVO CLARO (CORREGIDO SIN DUPLICIDAD)
+  // MOTOR DE ANÁLISIS AUTOMÁTICO INTELIGENTE (PRIORIZA VENTAS Y LEADS)
   // =========================================================================
   const summary = useMemo(() => {
     const orgList = draft.organic_channels;
@@ -754,10 +834,17 @@ export default function CeoExecutiveCleanReportPage() {
     const totalAdSpend = paidList.reduce((s, n) => s + Number(n.ad_spend || 0), 0);
     const totalAttributedRevenue = paidList.reduce((s, n) => s + Number(n.revenue || 0), 0);
 
-    // Tráfico Web Total = Visitas Orgánicas (Tabla 2) + Clics de Tráfico Web Paid (Tabla 3)
-    const totalPaidTrafficClicks = paidList
-      .filter((p) => p.objective_type === 'Tráfico Web')
-      .reduce((s, p) => s + Number(p.results_count || 0), 0);
+    const totalPaidTrafficClicks = draft.show_paid_section
+      ? paidList
+          .filter((p) => p.objective_type === 'Tráfico Web / Visitas')
+          .reduce((s, p) => s + Number(p.results_count || 0), 0)
+      : 0;
+
+    const totalLeadsCaptured = draft.show_paid_section
+      ? paidList
+          .filter((p) => p.objective_type === 'Contactos / Mensajes (Leads)')
+          .reduce((s, p) => s + Number(p.results_count || 0), 0)
+      : 0;
 
     const totalAllWebTraffic = totalOrganicWebVisits + totalPaidTrafficClicks;
 
@@ -785,20 +872,18 @@ export default function CeoExecutiveCleanReportPage() {
         ? costPerNewCustomer / monthlyMarginPerCust
         : 0;
 
-    // Conversión real sobre el tráfico web total (ej. 175 / 6.439 = 2.72%)
     const funnelConvRate =
       totalAllWebTraffic > 0 && newCustomers > 0
         ? (newCustomers / totalAllWebTraffic) * 100
         : 0;
 
-    // Cuota real de tráfico gratuito sin anuncios (ej. 91 / 6.439 = 1.4%)
     const freeTrafficSharePct =
       totalAllWebTraffic > 0 ? (totalOrganicWebVisits / totalAllWebTraffic) * 100 : 100;
 
     const webVisitsYoY = calcYoY(totalAllWebTraffic, Number(draft.prev_year_web_visits || 0));
     const revenueYoY = calcYoY(bizRevenue, Number(draft.prev_year_revenue || 0));
 
-    // Enriquecer canales orgánicos con cuota web orgánica y % de clic
+    // Enriquecer canales orgánicos
     const enrichedOrgList = [...orgList]
       .map((ch) => {
         const webSharePct =
@@ -817,6 +902,42 @@ export default function CeoExecutiveCleanReportPage() {
       })
       .sort((a, b) => b.web_visits - a.web_visits);
 
+    // Lista unificada de entradas web por canal (Orgánico + Pago)
+    const unifiedTrafficSources = [
+      ...orgList
+        .filter((n) => Number(n.web_visits || 0) > 0)
+        .map((n) => ({
+          id: n.id,
+          name: n.name,
+          type: 'ORGÁNICO' as const,
+          color: n.color,
+          visits: Number(n.web_visits || 0),
+          impressions: Number(n.organic_reach || 0),
+          spend: 0,
+        })),
+      ...(draft.show_paid_section
+        ? paidList
+            .filter(
+              (p) => p.objective_type === 'Tráfico Web / Visitas' && Number(p.results_count || 0) > 0
+            )
+            .map((p) => ({
+              id: p.id,
+              name: `${p.platform} · ${p.campaign_label}`,
+              type: 'PAGO' as const,
+              color: p.color,
+              visits: Number(p.results_count || 0),
+              impressions: Number(p.paid_reach || 0),
+              spend: Number(p.ad_spend || 0),
+            }))
+        : []),
+    ]
+      .map((item) => ({
+        ...item,
+        sharePct: totalAllWebTraffic > 0 ? (item.visits / totalAllWebTraffic) * 100 : 0,
+        ctrPct: item.impressions > 0 ? (item.visits / item.impressions) * 100 : 0,
+      }))
+      .sort((a, b) => b.visits - a.visits);
+
     // Auditoría de cada campaña Paid en lenguaje claro
     const evaluatedPaid = paidList.map((camp) => {
       const spend = Number(camp.ad_spend || 0);
@@ -826,6 +947,7 @@ export default function CeoExecutiveCleanReportPage() {
       const unitCost = spend > 0 && results > 0 ? spend / results : 0;
       const salesMultiplier = spend > 0 && rev > 0 ? rev / spend : 0;
       const avgTicket = rev > 0 && results > 0 ? rev / results : 0;
+      const priority = OBJECTIVE_DICTIONARY[camp.objective_type].businessPriority;
 
       let verdict: 'ESCALAR' | 'OPTIMIZAR' | 'FUGA / CORTAR' | 'SIN COSTE' = 'SIN COSTE';
       let reason = 'Impulso sin coste asignado en esta línea.';
@@ -833,28 +955,21 @@ export default function CeoExecutiveCleanReportPage() {
       if (spend > 0) {
         if (results === 0 && rev === 0) {
           verdict = 'FUGA / CORTAR';
-          reason = `Gasto de ${formatEur(spend)} sin ventas ni contactos registrados.`;
+          reason = `Gasto de ${formatEur(spend)} sin resultados ni ventas registradas.`;
         } else if (rev > 0 && salesMultiplier < 1) {
           verdict = 'FUGA / CORTAR';
           reason = `Pérdida directa: retorna ${salesMultiplier.toFixed(2)} € por cada 1 € invertido.`;
         } else if (
-          (camp.objective_type === 'Mensajes / Leads' ||
-            camp.objective_type === 'Ventas / Compras') &&
+          camp.objective_type !== 'Reconocimiento / Alcance' &&
           draft.target_max_cpa > 0 &&
           unitCost > draft.target_max_cpa
         ) {
           verdict = 'FUGA / CORTAR';
-          reason = `Coste de ${unitCost.toFixed(2)} € supera el máximo rentable (${draft.target_max_cpa} €).`;
-        } else if (
-          camp.objective_type === 'Tráfico Web' &&
-          draft.target_max_cpa > 0 &&
-          unitCost > draft.target_max_cpa
-        ) {
-          verdict = 'FUGA / CORTAR';
-          reason = `Coste por visita (${unitCost.toFixed(2)} €) supera el umbral (${draft.target_max_cpa} €).`;
+          reason = `Coste de ${unitCost.toFixed(2)} € supera el límite rentable (${draft.target_max_cpa} €).`;
         } else if (
           (rev > 0 && salesMultiplier >= draft.target_min_roas) ||
-          (unitCost > 0 && unitCost <= draft.target_max_cpa)
+          (unitCost > 0 && unitCost <= draft.target_max_cpa) ||
+          (camp.objective_type === 'Reconocimiento / Alcance' && results > 0)
         ) {
           verdict = 'ESCALAR';
           reason =
@@ -863,7 +978,7 @@ export default function CeoExecutiveCleanReportPage() {
               : `Captación eficiente: ${unitCost.toFixed(2)} € por ${camp.result_unit_label.replace(/s$/, '')}.`;
         } else {
           verdict = 'OPTIMIZAR';
-          reason = 'Rentabilidad media; margen de mejora en anuncio o página.';
+          reason = 'Rentabilidad media; margen de mejora en creatividad o página de destino.';
         }
       }
 
@@ -872,12 +987,13 @@ export default function CeoExecutiveCleanReportPage() {
         unitCost,
         salesMultiplier,
         avgTicket,
+        priority,
         verdict,
         reason,
       };
     });
 
-    // Agrupación por Objetivo
+    // Agrupación normalizada por Objetivo
     const byObjectiveMap = new Map<
       ObjectiveCategory,
       {
@@ -886,6 +1002,7 @@ export default function CeoExecutiveCleanReportPage() {
         totalResults: number;
         totalSpend: number;
         totalRevenue: number;
+        definition: ObjectiveDefinition;
       }
     >();
 
@@ -900,10 +1017,11 @@ export default function CeoExecutiveCleanReportPage() {
       } else {
         byObjectiveMap.set(ch.objective_type, {
           objective: ch.objective_type,
-          unit: ch.result_unit_label || OBJECTIVE_UNIT_DEFAULTS[ch.objective_type],
+          unit: ch.result_unit_label || OBJECTIVE_DICTIONARY[ch.objective_type].unit,
           totalResults: Number(ch.results_count || 0),
           totalSpend: Number(ch.ad_spend || 0),
           totalRevenue: Number(ch.revenue || 0),
+          definition: OBJECTIVE_DICTIONARY[ch.objective_type],
         });
       }
     });
@@ -915,31 +1033,77 @@ export default function CeoExecutiveCleanReportPage() {
         grp.totalRevenue > 0 && grp.totalResults > 0 ? grp.totalRevenue / grp.totalResults : 0,
     }));
 
-    // Tarjetas de Diagnóstico Directivo
-    const activeSpendCampaigns = evaluatedPaid.filter((c) => c.ad_spend > 0);
-    const leakingCampaigns = evaluatedPaid.filter((c) => c.verdict === 'FUGA / CORTAR');
+    // =======================================================================
+    // TARJETAS DE DIAGNÓSTICO DIRECTIVO (100% AUTOMÁTICAS Y PRIORIZADAS)
+    // =======================================================================
+    const activeSpendCampaigns = draft.show_paid_section
+      ? evaluatedPaid.filter((c) => c.ad_spend > 0)
+      : [];
+    const leakingCampaigns = activeSpendCampaigns.filter((c) => c.verdict === 'FUGA / CORTAR');
     const wastedSpend = leakingCampaigns.reduce((s, c) => s + Number(c.ad_spend || 0), 0);
 
+    // 1. Tarjeta Verde: Prioriza Ventas > Contactos/Leads > Tráfico > Comunidad > Alcance
     const bestPaid = [...activeSpendCampaigns]
       .filter((c) => c.verdict === 'ESCALAR')
-      .sort(
-        (a, b) =>
-          (b.salesMultiplier || 1 / (b.unitCost || 999)) -
-          (a.salesMultiplier || 1 / (a.unitCost || 999))
-      )[0];
+      .sort((a, b) => {
+        if (b.priority !== a.priority) return b.priority - a.priority;
+        if (b.salesMultiplier !== a.salesMultiplier) return b.salesMultiplier - a.salesMultiplier;
+        const aCost = a.unitCost > 0 ? a.unitCost : 999999;
+        const bCost = b.unitCost > 0 ? b.unitCost : 999999;
+        return aCost - bCost;
+      })[0];
 
     const bestOrganic = enrichedOrgList[0];
 
     let profitableTitle = 'Sin datos suficientes';
     let profitableWhy = 'Carga campañas o canales para detectar el motor principal.';
     if (bestPaid) {
-      profitableTitle = `${bestPaid.platform} (${bestPaid.campaign_label})`;
-      profitableWhy = bestPaid.reason;
-    } else if (bestOrganic) {
+      profitableTitle = `${bestPaid.platform} · ${bestPaid.campaign_label}`;
+      profitableWhy = `${bestPaid.reason} (${formatCompact(bestPaid.results_count)} ${
+        bestPaid.result_unit_label
+      } con ${formatEur(bestPaid.ad_spend)}).`;
+    } else if (bestOrganic && bestOrganic.web_visits > 0) {
       profitableTitle = `${bestOrganic.name} (Canal Gratuito)`;
       profitableWhy = `Aporta ${formatCompact(bestOrganic.web_visits)} visitas web (${bestOrganic.webSharePct.toFixed(
         1
       )}% del orgánico) con 0 € de gasto.`;
+    } else if (bestOrganic && bestOrganic.organic_reach > 0) {
+      const topReach = [...enrichedOrgList].sort((a, b) => b.organic_reach - a.organic_reach)[0];
+      profitableTitle = `${topReach.name} (Visibilidad Orgánica)`;
+      profitableWhy = `Genera ${formatCompact(
+        topReach.organic_reach
+      )} visualizaciones gratuitas y +${formatCompact(
+        topReach.organic_growth_net
+      )} seguidores netos sin gasto en anuncios.`;
+    }
+
+    // 2. Tarjeta Central: Detecta fugas reales O ineficiencias relativas dentro del mismo objetivo
+    let relativeInefficient: {
+      camp: (typeof activeSpendCampaigns)[number];
+      avgCost: number;
+      pctMoreExpensive: number;
+    } | null = null;
+
+    if (leakingCampaigns.length === 0 && activeSpendCampaigns.length >= 2) {
+      objectiveGroups.forEach((grp) => {
+        if (grp.avgUnitCost <= 0) return;
+        const sameObjCamps = activeSpendCampaigns.filter(
+          (c) => c.objective_type === grp.objective && c.unitCost > 0
+        );
+        if (sameObjCamps.length < 2) return;
+        const mostExpensive = [...sameObjCamps].sort((a, b) => b.unitCost - a.unitCost)[0];
+        const ratio = mostExpensive.unitCost / grp.avgUnitCost;
+        if (ratio >= 1.2) {
+          const pctMore = Math.round((ratio - 1) * 100);
+          if (!relativeInefficient || pctMore > relativeInefficient.pctMoreExpensive) {
+            relativeInefficient = {
+              camp: mostExpensive,
+              avgCost: grp.avgUnitCost,
+              pctMoreExpensive: pctMore,
+            };
+          }
+        }
+      });
     }
 
     let leakTitle = 'Sin fugas de presupuesto';
@@ -947,50 +1111,91 @@ export default function CeoExecutiveCleanReportPage() {
       activeSpendCampaigns.length > 0
         ? `Todas las campañas operan dentro del límite rentable (${draft.target_max_cpa} € máx.).`
         : 'Sin inversión publicitaria activa en este periodo.';
+    let hasAlertCard = false;
+
     if (leakingCampaigns.length > 0) {
       const worst = [...leakingCampaigns].sort((a, b) => b.ad_spend - a.ad_spend)[0];
       leakTitle = `${worst.platform} · ${worst.campaign_label} (${formatEur(wastedSpend)} en riesgo)`;
       leakWhy = worst.reason;
+      hasAlertCard = true;
+    } else if (relativeInefficient) {
+      const { camp, avgCost, pctMoreExpensive } = relativeInefficient as {
+        camp: (typeof activeSpendCampaigns)[number];
+        avgCost: number;
+        pctMoreExpensive: number;
+      };
+      leakTitle = `Oportunidad de ahorro en ${camp.platform}`;
+      leakWhy = `Su coste (${camp.unitCost.toFixed(2)} €) es un ${pctMoreExpensive}% más caro que la media en ${
+        camp.objective_type
+      } (${avgCost.toFixed(2)} €). Reasignar ${formatEur(camp.ad_spend)} mejoraría el volumen.`;
+      hasAlertCard = true;
     }
 
-    let funnelTitle = `Conversión a Cliente: ${funnelConvRate.toFixed(2)}%`;
+    // 3. Tarjeta Ámbar: Embudo de conversión y cierre
+    let funnelTitle =
+      draft.show_financial_section && newCustomers > 0
+        ? `Conversión a Cliente: ${funnelConvRate.toFixed(2)}%`
+        : totalLeadsCaptured > 0
+          ? `Consultas Captadas: ${formatCompact(totalLeadsCaptured)}`
+          : `Tráfico Web Total: ${formatCompact(totalAllWebTraffic)}`;
+
     let funnelWhy =
-      newCustomers > 0
+      draft.show_financial_section && newCustomers > 0
         ? `De ${formatCompact(totalAllWebTraffic)} visitas web (${formatCompact(
             totalOrganicWebVisits
           )} orgánicas + ${formatCompact(totalPaidTrafficClicks)} de pago) se cerraron ${formatCompact(
             newCustomers
           )} clientes nuevos (a ${formatEur(costPerNewCustomer)} cada uno).`
-        : 'Indica los nuevos clientes captados en el editor para calcular la conversión real.';
-    if (totalAllWebTraffic >= 2000 && funnelConvRate > 0 && funnelConvRate < 0.8) {
+        : totalLeadsCaptured > 0
+          ? `Se generaron ${formatCompact(
+              totalLeadsCaptured
+            )} consultas directas y ${formatCompact(totalAllWebTraffic)} visitas web (${freeTrafficSharePct.toFixed(
+              1
+            )}% tráfico gratuito).`
+          : `Flujo de ${formatCompact(totalAllWebTraffic)} visitas web (${formatCompact(
+              totalOrganicWebVisits
+            )} orgánicas + ${formatCompact(totalPaidTrafficClicks)} de pago).`;
+
+    if (
+      draft.show_financial_section &&
+      totalAllWebTraffic >= 2000 &&
+      funnelConvRate > 0 &&
+      funnelConvRate < 0.8
+    ) {
       funnelTitle = `Freno en el Cierre Web (${funnelConvRate.toFixed(2)}%)`;
       funnelWhy = `Llegan ${formatCompact(
         totalAllWebTraffic
-      )} visitas pero convierten pocas: revisar velocidad web móvil o atención comercial.`;
+      )} visitas pero convierten pocas: revisar velocidad web móvil o proceso de cierre comercial.`;
     }
 
-    // Donut de Cuota de Tráfico Web Orgánico
+    // Donut resumen: Tráfico de Pago vs. Tráfico Gratuito (Orgánico)
     let startPct = 0;
-    const webTrafficDonut = enrichedOrgList
-      .filter((n) => n.web_visits > 0)
-      .map((n) => {
-        const pct =
-          totalOrganicWebVisits > 0
-            ? (Number(n.web_visits || 0) / totalOrganicWebVisits) * 100
-            : 0;
-        const item = { ...n, pct, start: startPct };
-        startPct += pct;
-        return item;
+    const webTrafficDonut = [
+      {
+        id: 'donut-paid',
+        name: 'Tráfico de Pago (Anuncios)',
+        color: '#015b9d',
+        visits: totalPaidTrafficClicks,
+        pct: totalAllWebTraffic > 0 ? (totalPaidTrafficClicks / totalAllWebTraffic) * 100 : 0,
+      },
+      {
+        id: 'donut-org',
+        name: 'Tráfico Gratuito (Orgánico)',
+        color: '#16a34a',
+        visits: totalOrganicWebVisits,
+        pct: totalAllWebTraffic > 0 ? (totalOrganicWebVisits / totalAllWebTraffic) * 100 : 0,
+      },
+    ]
+      .filter((d) => d.visits > 0)
+      .map((d) => {
+        const seg = { ...d, start: startPct };
+        startPct += d.pct;
+        return seg;
       });
 
-    const maxFinancialBar = Math.max(
-      ...activeSpendCampaigns.map((c) => Math.max(c.ad_spend, c.revenue)),
-      1
-    );
-
-    // Resumen Ejecutivo en español claro para Dirección General
+    // Resumen Ejecutivo adaptado según si los Datos de Caja están visibles u ocultos
     let generatedHeadline = `${draft.client_name}: `;
-    if (totalAdSpend > 0 && bizRevenue > 0) {
+    if (draft.show_financial_section && totalAdSpend > 0 && bizRevenue > 0) {
       generatedHeadline += `Ingresos totales de ${formatEur(bizRevenue)} frente a ${formatEur(
         totalAdSpend
       )} invertidos en publicidad (entran ${totalCashMultiplier.toFixed(2)} € en caja por cada 1 € invertido; beneficio neto de ${netProfitPerEuro.toFixed(
@@ -1001,27 +1206,51 @@ export default function CeoExecutiveCleanReportPage() {
           newCustomers
         )} clientes nuevos a un coste de ${formatEur(costPerNewCustomer)} por cliente${
           customerProfitMultiplier > 0
-            ? `, multiplicando x${customerProfitMultiplier.toFixed(1)} su valor a lo largo de su estancia`
+            ? `, multiplicando x${customerProfitMultiplier.toFixed(1)} su valor a lo largo de su relación`
             : ''
         }${paybackMonths > 0 ? ` (inversión recuperada en ${paybackMonths.toFixed(1)} meses)` : ''}. `;
       }
+    } else if (draft.show_paid_section && totalAdSpend > 0) {
+      generatedHeadline += `Con una inversión publicitaria de ${formatEur(
+        totalAdSpend
+      )} se alcanzaron ${formatCompact(totalPaidReach)} personas, generando ${formatCompact(
+        totalAllWebTraffic
+      )} visitas web totales${
+        totalLeadsCaptured > 0
+          ? ` y ${formatCompact(totalLeadsCaptured)} contactos comerciales directos`
+          : ''
+      }, sumado a una comunidad orgánica de ${formatCompact(totalFollowers)} seguidores (+${formatCompact(
+        totalOrganicGrowth
+      )} netos). `;
     } else {
       generatedHeadline += `Comunidad de ${formatCompact(
         totalFollowers
-      )} seguidores (+${formatCompact(totalOrganicGrowth)} netos) y ${formatCompact(
+      )} seguidores (+${formatCompact(totalOrganicGrowth)} netos), ${formatCompact(
+        totalOrganicReach
+      )} visualizaciones gratuitas y ${formatCompact(
         totalAllWebTraffic
-      )} visitas web (${freeTrafficSharePct.toFixed(1)}% tráfico gratuito sin anuncios). `;
+      )} visitas web sin inversión publicitaria. `;
     }
 
-    if (leakingCampaigns.length > 0) {
+    if (draft.show_paid_section && leakingCampaigns.length > 0) {
       generatedHeadline += `PUNTO DE ATENCIÓN: ${leakingCampaigns
         .map((c) => `${c.platform} (${c.campaign_label})`)
         .join(', ')} concentra ${formatEur(wastedSpend)} con baja rentabilidad y requiere ajuste.`;
     }
 
+    // Numeración dinámica de secciones según bloques visibles
+    let secNum = 1;
+    const secFinancial = draft.show_financial_section ? secNum++ : 0;
+    const secOrganic = secNum++;
+    const secPaid = draft.show_paid_section && evaluatedPaid.length > 0 ? secNum++ : 0;
+    const secTrafficChart = secNum++;
+    const secBalanceChart = secNum++;
+    const secActionPlan = secNum++;
+
     return {
       orgList,
       enrichedOrgList,
+      unifiedTrafficSources,
       evaluatedPaid,
       activeSpendCampaigns,
       totalFollowers,
@@ -1029,6 +1258,7 @@ export default function CeoExecutiveCleanReportPage() {
       totalOrganicReach,
       totalOrganicWebVisits,
       totalPaidTrafficClicks,
+      totalLeadsCaptured,
       totalAllWebTraffic,
       webVisitsYoY,
       totalPaidReach,
@@ -1049,12 +1279,17 @@ export default function CeoExecutiveCleanReportPage() {
       profitableWhy,
       leakTitle,
       leakWhy,
-      hasLeak: leakingCampaigns.length > 0,
+      hasLeak: hasAlertCard,
       funnelTitle,
       funnelWhy,
       webTrafficDonut,
-      maxFinancialBar,
       generatedHeadline,
+      secFinancial,
+      secOrganic,
+      secPaid,
+      secTrafficChart,
+      secBalanceChart,
+      secActionPlan,
     };
   }, [draft]);
 
@@ -1109,11 +1344,53 @@ export default function CeoExecutiveCleanReportPage() {
 
             <button
               type="button"
-              onClick={() => setShowGuide((p) => !p)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-[#015b9d] border border-sky-200 text-xs font-extrabold cursor-pointer"
+              onClick={() => {
+                setShowKpiLegend((p) => !p);
+                setShowGuide(false);
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-extrabold cursor-pointer ${
+                showKpiLegend
+                  ? 'bg-slate-900 text-[#f5b514] border-slate-900'
+                  : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-200'
+              }`}
+            >
+              <Info className="w-3.5 h-3.5" />
+              <span>Leyenda de KPIs</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowGuide((p) => !p);
+                setShowKpiLegend(false);
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-extrabold cursor-pointer ${
+                showGuide
+                  ? 'bg-[#015b9d] text-white border-[#015b9d]'
+                  : 'bg-sky-50 hover:bg-sky-100 text-[#015b9d] border-sky-200'
+              }`}
             >
               <HelpCircle className="w-3.5 h-3.5" />
-              <span>Cómo Sacar los Datos en Plataformas</span>
+              <span>Cómo Sacar los Datos</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                setDraft((prev) => ({
+                  ...prev,
+                  show_financial_section: !prev.show_financial_section,
+                }))
+              }
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-bold text-slate-700 cursor-pointer"
+              title="Oculta este bloque cuando el cliente aún no comparta sus cifras internas de facturación"
+            >
+              {draft.show_financial_section ? (
+                <ToggleRight className="w-4 h-4 text-emerald-600" />
+              ) : (
+                <ToggleLeft className="w-4 h-4 text-slate-400" />
+              )}
+              <span>Datos de Caja {draft.show_financial_section ? 'Visibles' : 'Ocultos'}</span>
             </button>
 
             <button
@@ -1184,6 +1461,57 @@ export default function CeoExecutiveCleanReportPage() {
           </div>
         </div>
 
+        {/* PANEL DESPLEGABLE: LEYENDA DE KPIs DEL INFORME */}
+        {showKpiLegend && (
+          <div className="no-print bg-white p-5 rounded-3xl border-2 border-[#f5b514] shadow-md space-y-4 text-xs">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <div className="flex items-center gap-2">
+                <Info className="w-4 h-4 text-[#ed6723]" />
+                <h2 className="text-sm font-black text-slate-900">
+                  Leyenda de KPIs: Qué Significa y Cómo se Calcula Cada Indicador del Informe
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowKpiLegend(false)}
+                className="text-xs font-bold text-slate-500 hover:text-black cursor-pointer"
+              >
+                Cerrar ✕
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {KPI_LEGEND_ITEMS.map((group) => (
+                <div
+                  key={group.category}
+                  className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3"
+                >
+                  <div
+                    className="text-xs font-black uppercase tracking-wider"
+                    style={{ color: group.color }}
+                  >
+                    {group.category}
+                  </div>
+                  <div className="space-y-2.5">
+                    {group.items.map((kpi) => (
+                      <div
+                        key={kpi.name}
+                        className="bg-white p-3 rounded-xl border border-slate-200/80 space-y-1"
+                      >
+                        <div className="font-black text-slate-950 text-[11px]">{kpi.name}</div>
+                        <div className="text-[10px] font-bold text-[#015b9d] bg-sky-50 px-2 py-0.5 rounded inline-block">
+                          Fórmula: {kpi.formula}
+                        </div>
+                        <p className="text-[11px] text-slate-600 leading-snug">{kpi.meaning}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* GUÍA PRÁCTICA DE EXTRACCIÓN DE MÉTRICAS EN CADA PLATAFORMA */}
         {showGuide && (
           <div className="no-print bg-white p-5 rounded-3xl border-2 border-[#015b9d] shadow-md space-y-3 text-xs">
@@ -1235,7 +1563,7 @@ export default function CeoExecutiveCleanReportPage() {
                   Configuración del Informe Ejecutivo · {selectedMonth}
                 </h2>
                 <p className="text-[11px] text-slate-500">
-                  Escribe los números sin puntos de millar (ej. 13208.31). En la tabla 2A pon solo visitas orgánicas sin anuncio.
+                  Escribe los números sin puntos de millar (ej. 13208.31). Al guardar, las 3 tarjetas de diagnóstico directivo se recalculan automáticamente.
                 </p>
               </div>
               <button
@@ -1331,85 +1659,109 @@ export default function CeoExecutiveCleanReportPage() {
               </div>
 
               {/* Cifras de Caja y Clientes */}
-              <div className="pt-2 border-t border-slate-200 space-y-2">
-                <div className="font-black uppercase text-emerald-800">
-                  1B. Cifras de Caja y Clientes del Mes (Para los Indicadores Financieros de Dirección)
+              {draft.show_financial_section ? (
+                <div className="pt-2 border-t border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-black uppercase text-emerald-800">
+                      1B. Cifras de Caja y Clientes del Mes (Desde el CRM o Facturación Interna)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setDraft({ ...draft, show_financial_section: false })}
+                      className="text-[11px] font-bold text-slate-500 hover:text-rose-600 cursor-pointer"
+                    >
+                      El cliente no facilita caja (Ocultar sección ✕)
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        Facturación Total Caja (€)
+                      </label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={draft.total_business_revenue}
+                        onChange={(e) =>
+                          setDraft({ ...draft, total_business_revenue: Number(e.target.value) })
+                        }
+                        className="w-full px-2.5 py-1.5 rounded-xl border border-emerald-300 bg-white font-black text-right"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        Clientes Nuevos Captados
+                      </label>
+                      <input
+                        type="number"
+                        value={draft.new_customers_acquired}
+                        onChange={(e) =>
+                          setDraft({ ...draft, new_customers_acquired: Number(e.target.value) })
+                        }
+                        className="w-full px-2.5 py-1.5 rounded-xl border border-emerald-300 bg-white font-black text-right"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        Valor Total por Cliente (€)
+                      </label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={draft.customer_ltv}
+                        onChange={(e) =>
+                          setDraft({ ...draft, customer_ltv: Number(e.target.value) })
+                        }
+                        className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white font-bold text-right"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        Margen Bruto Negocio (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={draft.gross_margin_pct}
+                        onChange={(e) =>
+                          setDraft({ ...draft, gross_margin_pct: Number(e.target.value) })
+                        }
+                        className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white font-bold text-right"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        Beneficio Mensual/Cliente (€)
+                      </label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={draft.avg_monthly_margin_per_customer}
+                        onChange={(e) =>
+                          setDraft({
+                            ...draft,
+                            avg_monthly_margin_per_customer: Number(e.target.value),
+                          })
+                        }
+                        className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white font-bold text-right"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Facturación Total Caja (€)
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      value={draft.total_business_revenue}
-                      onChange={(e) =>
-                        setDraft({ ...draft, total_business_revenue: Number(e.target.value) })
-                      }
-                      className="w-full px-2.5 py-1.5 rounded-xl border border-emerald-300 bg-white font-black text-right"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Clientes Nuevos Captados
-                    </label>
-                    <input
-                      type="number"
-                      value={draft.new_customers_acquired}
-                      onChange={(e) =>
-                        setDraft({ ...draft, new_customers_acquired: Number(e.target.value) })
-                      }
-                      className="w-full px-2.5 py-1.5 rounded-xl border border-emerald-300 bg-white font-black text-right"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Valor Total por Cliente (€)
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      value={draft.customer_ltv}
-                      onChange={(e) =>
-                        setDraft({ ...draft, customer_ltv: Number(e.target.value) })
-                      }
-                      className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white font-bold text-right"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Margen Bruto Negocio (%)
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      value={draft.gross_margin_pct}
-                      onChange={(e) =>
-                        setDraft({ ...draft, gross_margin_pct: Number(e.target.value) })
-                      }
-                      className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white font-bold text-right"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Beneficio Mensual/Cliente (€)
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      value={draft.avg_monthly_margin_per_customer}
-                      onChange={(e) =>
-                        setDraft({
-                          ...draft,
-                          avg_monthly_margin_per_customer: Number(e.target.value),
-                        })
-                      }
-                      className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white font-bold text-right"
-                    />
-                  </div>
+              ) : (
+                <div className="pt-2 border-t border-slate-200 flex items-center justify-between bg-amber-50/70 px-3 py-2 rounded-xl border border-amber-200">
+                  <span className="text-[11px] font-semibold text-amber-900">
+                    Bloque financiero de caja oculto: el informe se centrará en captación de consultas, alcance, visitas y rendimiento de campañas.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setDraft({ ...draft, show_financial_section: true })}
+                    className="text-[11px] font-black text-[#015b9d] hover:underline cursor-pointer shrink-0 ml-2"
+                  >
+                    + Activar Datos de Caja
+                  </button>
                 </div>
-              </div>
+              )}
 
               {/* Comparativa Año Anterior */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3 pt-2 border-t border-slate-200 items-end">
@@ -1426,21 +1778,23 @@ export default function CeoExecutiveCleanReportPage() {
                     className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white font-bold text-right"
                   />
                 </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Facturación Mismo Mes Año Pasado (€)
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    value={draft.prev_year_revenue}
-                    onChange={(e) =>
-                      setDraft({ ...draft, prev_year_revenue: Number(e.target.value) })
-                    }
-                    className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white font-bold text-right"
-                  />
-                </div>
-                <div>
+                {draft.show_financial_section && (
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Facturación Mismo Mes Año Pasado (€)
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={draft.prev_year_revenue}
+                      onChange={(e) =>
+                        setDraft({ ...draft, prev_year_revenue: Number(e.target.value) })
+                      }
+                      className="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white font-bold text-right"
+                    />
+                  </div>
+                )}
+                <div className={draft.show_financial_section ? '' : 'md:col-span-2'}>
                   <label className="block font-bold text-slate-700 mb-1">Subtítulo Cabecera</label>
                   <input
                     type="text"
@@ -1591,12 +1945,17 @@ export default function CeoExecutiveCleanReportPage() {
               </div>
             </div>
 
-            {/* 2B. CAMPAÑAS DE PAGO POR OBJETIVO */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="font-black uppercase text-[#015b9d]">
-                  2B. Campañas de Publicidad de Pago (Separadas por Objetivo)
-                </span>
+            {/* 2B. CAMPAÑAS DE PAGO CON DEFINICIÓN CONCEPTUAL DE OBJETIVOS */}
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <span className="font-black uppercase text-[#015b9d] block">
+                    2B. Campañas de Publicidad de Pago (Define el Objetivo Universal al crear cada canal)
+                  </span>
+                  <span className="text-[11px] text-slate-500">
+                    Si el cliente no atribuye ventas directas por anuncio, deja la columna &quot;Ventas (€)&quot; en 0: se evaluará por coste por resultado.
+                  </span>
+                </div>
                 <button
                   type="button"
                   onClick={handleAddPaid}
@@ -1607,6 +1966,18 @@ export default function CeoExecutiveCleanReportPage() {
                 </button>
               </div>
 
+              {/* MARCO CONCEPTUAL DE LOS 5 OBJETIVOS UNIVERSALES EN EL EDITOR */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                {ALL_OBJECTIVES.map((obj) => (
+                  <div key={obj} className="bg-white p-2.5 rounded-xl border border-slate-200/80">
+                    <div className="text-[10px] font-black text-[#015b9d]">{obj}</div>
+                    <p className="text-[10px] text-slate-600 leading-snug mt-0.5">
+                      {OBJECTIVE_DICTIONARY[obj].conceptDefinition}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
               <div className="overflow-x-auto rounded-2xl border border-slate-200">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -1614,125 +1985,132 @@ export default function CeoExecutiveCleanReportPage() {
                       <th className="p-2">Color</th>
                       <th className="p-2">Plataforma</th>
                       <th className="p-2">Campaña</th>
-                      <th className="p-2">Objetivo</th>
+                      <th className="p-2">Objetivo Normalizado</th>
                       <th className="p-2 text-right">Personas Alcanzadas</th>
                       <th className="p-2 text-right">Inversión (€)</th>
                       <th className="p-2 text-right">Resultados</th>
                       <th className="p-2">Unidad</th>
-                      <th className="p-2 text-right">Ventas (€)</th>
+                      <th className="p-2 text-right">Ventas (€) Opcional</th>
                       <th className="p-2 text-center">Quitar</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
-                    {draft.paid_campaigns.map((camp) => (
-                      <tr key={camp.id} className="hover:bg-slate-50">
-                        <td className="p-1.5 text-center">
-                          <input
-                            type="color"
-                            value={camp.color}
-                            onChange={(e) => updatePaidField(camp.id, 'color', e.target.value)}
-                            className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent"
-                          />
-                        </td>
-                        <td className="p-1.5">
-                          <input
-                            type="text"
-                            value={camp.platform}
-                            onChange={(e) => updatePaidField(camp.id, 'platform', e.target.value)}
-                            className="w-28 px-2 py-1 rounded border border-slate-300 font-black"
-                          />
-                        </td>
-                        <td className="p-1.5">
-                          <input
-                            type="text"
-                            value={camp.campaign_label}
-                            onChange={(e) =>
-                              updatePaidField(camp.id, 'campaign_label', e.target.value)
-                            }
-                            className="w-36 px-2 py-1 rounded border border-slate-300 text-[11px] font-semibold"
-                          />
-                        </td>
-                        <td className="p-1.5">
-                          <select
-                            value={camp.objective_type}
-                            onChange={(e) =>
-                              updatePaidField(
-                                camp.id,
-                                'objective_type',
-                                e.target.value as ObjectiveCategory
-                              )
-                            }
-                            className="w-36 px-2 py-1 rounded border border-slate-300 bg-white text-[11px] font-extrabold text-slate-900"
-                          >
-                            <option value="Tráfico Web">Tráfico Web</option>
-                            <option value="Mensajes / Leads">Mensajes / Leads</option>
-                            <option value="Ventas / Compras">Ventas / Compras</option>
-                            <option value="Alcance / Branding">Alcance / Branding</option>
-                          </select>
-                        </td>
-                        <td className="p-1.5 text-right">
-                          <input
-                            type="number"
-                            value={camp.paid_reach}
-                            onChange={(e) =>
-                              updatePaidField(camp.id, 'paid_reach', Number(e.target.value))
-                            }
-                            className="w-20 px-1.5 py-1 rounded border border-slate-300 text-right font-bold"
-                          />
-                        </td>
-                        <td className="p-1.5 text-right">
-                          <input
-                            type="number"
-                            step="any"
-                            value={camp.ad_spend}
-                            onChange={(e) =>
-                              updatePaidField(camp.id, 'ad_spend', Number(e.target.value))
-                            }
-                            className="w-20 px-1.5 py-1 rounded border border-emerald-300 bg-emerald-50/50 text-right font-bold"
-                          />
-                        </td>
-                        <td className="p-1.5 text-right">
-                          <input
-                            type="number"
-                            value={camp.results_count}
-                            onChange={(e) =>
-                              updatePaidField(camp.id, 'results_count', Number(e.target.value))
-                            }
-                            className="w-20 px-1.5 py-1 rounded border border-emerald-300 bg-emerald-50/50 text-right font-bold"
-                          />
-                        </td>
-                        <td className="p-1.5">
-                          <input
-                            type="text"
-                            value={camp.result_unit_label}
-                            onChange={(e) =>
-                              updatePaidField(camp.id, 'result_unit_label', e.target.value)
-                            }
-                            className="w-20 px-1.5 py-1 rounded border border-slate-300 text-[11px] font-semibold"
-                          />
-                        </td>
-                        <td className="p-1.5 text-right">
-                          <input
-                            type="number"
-                            step="any"
-                            value={camp.revenue}
-                            onChange={(e) =>
-                              updatePaidField(camp.id, 'revenue', Number(e.target.value))
-                            }
-                            className="w-20 px-1.5 py-1 rounded border border-emerald-300 bg-emerald-50/50 text-right font-bold"
-                          />
-                        </td>
-                        <td className="p-1.5 text-center">
-                          <button
-                            type="button"
-                            onClick={() => handleRemovePaid(camp.id)}
-                            className="p-1 text-slate-400 hover:text-rose-600 cursor-pointer"
-                          >
-                            <Trash2 className="w-4 h-4 mx-auto" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {draft.paid_campaigns.map((camp) => {
+                      const def = OBJECTIVE_DICTIONARY[camp.objective_type];
+                      return (
+                        <tr key={camp.id} className="hover:bg-slate-50">
+                          <td className="p-1.5 text-center">
+                            <input
+                              type="color"
+                              value={camp.color}
+                              onChange={(e) => updatePaidField(camp.id, 'color', e.target.value)}
+                              className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent"
+                            />
+                          </td>
+                          <td className="p-1.5">
+                            <input
+                              type="text"
+                              value={camp.platform}
+                              onChange={(e) => updatePaidField(camp.id, 'platform', e.target.value)}
+                              className="w-28 px-2 py-1 rounded border border-slate-300 font-black"
+                            />
+                          </td>
+                          <td className="p-1.5">
+                            <input
+                              type="text"
+                              value={camp.campaign_label}
+                              onChange={(e) =>
+                                updatePaidField(camp.id, 'campaign_label', e.target.value)
+                              }
+                              className="w-36 px-2 py-1 rounded border border-slate-300 text-[11px] font-semibold"
+                            />
+                          </td>
+                          <td className="p-1.5">
+                            <select
+                              value={camp.objective_type}
+                              onChange={(e) =>
+                                updatePaidField(
+                                  camp.id,
+                                  'objective_type',
+                                  e.target.value as ObjectiveCategory
+                                )
+                              }
+                              className="w-48 px-2 py-1 rounded border border-sky-300 bg-sky-50/60 text-[11px] font-extrabold text-slate-900"
+                            >
+                              {ALL_OBJECTIVES.map((obj) => (
+                                <option key={obj} value={obj}>
+                                  {obj}
+                                </option>
+                              ))}
+                            </select>
+                            <div className="text-[9px] text-slate-500 mt-0.5 max-w-[190px] leading-tight">
+                              {def?.shortLabel}
+                            </div>
+                          </td>
+                          <td className="p-1.5 text-right">
+                            <input
+                              type="number"
+                              value={camp.paid_reach}
+                              onChange={(e) =>
+                                updatePaidField(camp.id, 'paid_reach', Number(e.target.value))
+                              }
+                              className="w-20 px-1.5 py-1 rounded border border-slate-300 text-right font-bold"
+                            />
+                          </td>
+                          <td className="p-1.5 text-right">
+                            <input
+                              type="number"
+                              step="any"
+                              value={camp.ad_spend}
+                              onChange={(e) =>
+                                updatePaidField(camp.id, 'ad_spend', Number(e.target.value))
+                              }
+                              className="w-20 px-1.5 py-1 rounded border border-emerald-300 bg-emerald-50/50 text-right font-bold"
+                            />
+                          </td>
+                          <td className="p-1.5 text-right">
+                            <input
+                              type="number"
+                              value={camp.results_count}
+                              onChange={(e) =>
+                                updatePaidField(camp.id, 'results_count', Number(e.target.value))
+                              }
+                              className="w-20 px-1.5 py-1 rounded border border-emerald-300 bg-emerald-50/50 text-right font-bold"
+                            />
+                          </td>
+                          <td className="p-1.5">
+                            <input
+                              type="text"
+                              value={camp.result_unit_label}
+                              onChange={(e) =>
+                                updatePaidField(camp.id, 'result_unit_label', e.target.value)
+                              }
+                              className="w-20 px-1.5 py-1 rounded border border-slate-300 text-[11px] font-semibold"
+                            />
+                          </td>
+                          <td className="p-1.5 text-right">
+                            <input
+                              type="number"
+                              step="any"
+                              value={camp.revenue}
+                              onChange={(e) =>
+                                updatePaidField(camp.id, 'revenue', Number(e.target.value))
+                              }
+                              className="w-20 px-1.5 py-1 rounded border border-slate-300 bg-white text-right font-bold"
+                            />
+                          </td>
+                          <td className="p-1.5 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePaid(camp.id)}
+                              className="p-1 text-slate-400 hover:text-rose-600 cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4 mx-auto" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -1937,13 +2315,14 @@ export default function CeoExecutiveCleanReportPage() {
           {/* BANDA DE TÍTULO Y PERIODO */}
           <div className="bg-slate-950 text-white px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <h1 className="text-xs sm:text-sm font-black tracking-wider uppercase">
-              INFORME EJECUTIVO DE RESULTADOS Y RENTABILIDAD · {draft.client_name}
+              INFORME EJECUTIVO DE RESULTADOS Y CRECIMIENTO · {draft.client_name}
             </h1>
             <div className="flex flex-wrap items-center gap-2">
-              {(summary.webVisitsYoY !== null || summary.revenueYoY !== null) && (
+              {(summary.webVisitsYoY !== null ||
+                (draft.show_financial_section && summary.revenueYoY !== null)) && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white text-[11px] font-bold">
                   <CalendarRange className="w-3.5 h-3.5 text-[#f5b514]" />
-                  {summary.revenueYoY !== null
+                  {draft.show_financial_section && summary.revenueYoY !== null
                     ? `Ventas vs. Año Pasado: ${summary.revenueYoY >= 0 ? '+' : ''}${summary.revenueYoY.toFixed(1)}%`
                     : `Visitas vs. Año Pasado: ${summary.webVisitsYoY! >= 0 ? '+' : ''}${summary.webVisitsYoY!.toFixed(1)}%`}
                 </span>
@@ -1963,124 +2342,137 @@ export default function CeoExecutiveCleanReportPage() {
               {activeHeadline}
             </div>
 
-            {/* BLOQUE 1: SALUD FINANCIERA DEL NEGOCIO */}
-            <div className="print-keep space-y-2.5">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-900">
-                  <Briefcase className="w-4 h-4 text-[#015b9d]" />
-                  <span>1. Salud Financiera y Rentabilidad de la Inversión</span>
+            {/* BLOQUE FINANCIERO (SOLO VISIBLE SI EL CLIENTE APORTA DATOS DE CAJA) */}
+            {draft.show_financial_section && (
+              <div className="print-keep space-y-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-900">
+                    <Briefcase className="w-4 h-4 text-[#015b9d]" />
+                    <span>
+                      {summary.secFinancial}. Salud Financiera y Rentabilidad de la Inversión
+                    </span>
+                  </div>
+                  <span className="text-xs font-semibold text-slate-500">
+                    Caja Total:{' '}
+                    <strong className="text-slate-950">{formatEur(summary.bizRevenue)}</strong> ·
+                    Inversión Publicidad:{' '}
+                    <strong className="text-slate-950">{formatEur(summary.totalAdSpend)}</strong>
+                  </span>
                 </div>
-                <span className="text-xs font-semibold text-slate-500">
-                  Caja Total: <strong className="text-slate-950">{formatEur(summary.bizRevenue)}</strong> · Inversión Publicidad: <strong className="text-slate-950">{formatEur(summary.totalAdSpend)}</strong>
-                </span>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                  <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80">
+                    <div className="text-[10px] font-black uppercase text-slate-500 flex items-center justify-between">
+                      <span>Retorno Caja Total</span>
+                      <Scale className="w-3.5 h-3.5 text-[#015b9d]" />
+                    </div>
+                    <div className="text-xl font-black text-slate-950 mt-1">
+                      {summary.totalCashMultiplier > 0
+                        ? `${summary.totalCashMultiplier.toFixed(2)}x`
+                        : '—'}
+                    </div>
+                    <div className="text-[10px] text-slate-500 leading-tight mt-1">
+                      Euros en caja por 1 € invertido
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80">
+                    <div className="text-[10px] font-black uppercase text-slate-500">
+                      Coste Cliente Nuevo
+                    </div>
+                    <div className="text-xl font-black text-slate-950 mt-1">
+                      {summary.costPerNewCustomer > 0
+                        ? formatEur(summary.costPerNewCustomer)
+                        : '—'}
+                    </div>
+                    <div className="text-[10px] text-slate-500 leading-tight mt-1">
+                      {summary.newCustomers > 0
+                        ? `${formatCompact(summary.newCustomers)} clientes captados`
+                        : 'Sin altas registradas'}
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80">
+                    <div className="text-[10px] font-black uppercase text-slate-500">
+                      Rentabilidad Cliente
+                    </div>
+                    <div
+                      className={`text-xl font-black mt-1 ${
+                        summary.customerProfitMultiplier >= 3
+                          ? 'text-emerald-700'
+                          : summary.customerProfitMultiplier > 0 &&
+                              summary.customerProfitMultiplier < 1.5
+                            ? 'text-rose-600'
+                            : 'text-slate-950'
+                      }`}
+                    >
+                      {summary.customerProfitMultiplier > 0
+                        ? `x${summary.customerProfitMultiplier.toFixed(1)}`
+                        : '—'}
+                    </div>
+                    <div className="text-[10px] text-slate-500 leading-tight mt-1">
+                      {summary.customerProfitMultiplier >= 3
+                        ? 'Muy saludable (Meta ≥ x3)'
+                        : draft.customer_ltv > 0
+                          ? `Valor cliente: ${formatEur(draft.customer_ltv)}`
+                          : 'Definir valor cliente'}
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80">
+                    <div className="text-[10px] font-black uppercase text-slate-500">
+                      Beneficio Neto / Euro
+                    </div>
+                    <div
+                      className={`text-xl font-black mt-1 ${
+                        summary.netProfitPerEuro >= 2
+                          ? 'text-emerald-700'
+                          : summary.netProfitPerEuro > 0 && summary.netProfitPerEuro < 1
+                            ? 'text-rose-600'
+                            : 'text-slate-950'
+                      }`}
+                    >
+                      {summary.netProfitPerEuro > 0
+                        ? `${summary.netProfitPerEuro.toFixed(2)} €`
+                        : '—'}
+                    </div>
+                    <div className="text-[10px] text-slate-500 leading-tight mt-1">
+                      Tras margen bruto ({draft.gross_margin_pct}%)
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80">
+                    <div className="text-[10px] font-black uppercase text-slate-500 flex items-center justify-between">
+                      <span>Plazo Recuperación</span>
+                      <Clock className="w-3.5 h-3.5 text-amber-600" />
+                    </div>
+                    <div className="text-xl font-black text-slate-950 mt-1">
+                      {summary.paybackMonths > 0
+                        ? `${summary.paybackMonths.toFixed(1)} meses`
+                        : '—'}
+                    </div>
+                    <div className="text-[10px] text-slate-500 leading-tight mt-1">
+                      Tiempo en amortizar captación
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80">
+                    <div className="text-[10px] font-black uppercase text-slate-500">
+                      Tráfico Gratuito
+                    </div>
+                    <div className="text-xl font-black text-[#015b9d] mt-1">
+                      {summary.freeTrafficSharePct.toFixed(1)}%
+                    </div>
+                    <div className="text-[10px] text-slate-500 leading-tight mt-1">
+                      {formatCompact(summary.totalOrganicWebVisits)} de{' '}
+                      {formatCompact(summary.totalAllWebTraffic)} visitas
+                    </div>
+                  </div>
+                </div>
               </div>
+            )}
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80">
-                  <div className="text-[10px] font-black uppercase text-slate-500 flex items-center justify-between">
-                    <span>Retorno Caja Total</span>
-                    <Scale className="w-3.5 h-3.5 text-[#015b9d]" />
-                  </div>
-                  <div className="text-xl font-black text-slate-950 mt-1">
-                    {summary.totalCashMultiplier > 0
-                      ? `${summary.totalCashMultiplier.toFixed(2)}x`
-                      : '—'}
-                  </div>
-                  <div className="text-[10px] text-slate-500 leading-tight mt-1">
-                    Euros en caja por 1 € invertido
-                  </div>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80">
-                  <div className="text-[10px] font-black uppercase text-slate-500">
-                    Coste Cliente Nuevo
-                  </div>
-                  <div className="text-xl font-black text-slate-950 mt-1">
-                    {summary.costPerNewCustomer > 0 ? formatEur(summary.costPerNewCustomer) : '—'}
-                  </div>
-                  <div className="text-[10px] text-slate-500 leading-tight mt-1">
-                    {summary.newCustomers > 0
-                      ? `${formatCompact(summary.newCustomers)} clientes captados`
-                      : 'Sin altas registradas'}
-                  </div>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80">
-                  <div className="text-[10px] font-black uppercase text-slate-500">
-                    Rentabilidad Cliente
-                  </div>
-                  <div
-                    className={`text-xl font-black mt-1 ${
-                      summary.customerProfitMultiplier >= 3
-                        ? 'text-emerald-700'
-                        : summary.customerProfitMultiplier > 0 &&
-                            summary.customerProfitMultiplier < 1.5
-                          ? 'text-rose-600'
-                          : 'text-slate-950'
-                    }`}
-                  >
-                    {summary.customerProfitMultiplier > 0
-                      ? `x${summary.customerProfitMultiplier.toFixed(1)}`
-                      : '—'}
-                  </div>
-                  <div className="text-[10px] text-slate-500 leading-tight mt-1">
-                    {summary.customerProfitMultiplier >= 3
-                      ? 'Muy saludable (Meta ≥ x3)'
-                      : draft.customer_ltv > 0
-                        ? `Valor cliente: ${formatEur(draft.customer_ltv)}`
-                        : 'Definir valor cliente'}
-                  </div>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80">
-                  <div className="text-[10px] font-black uppercase text-slate-500">
-                    Beneficio Neto / Euro
-                  </div>
-                  <div
-                    className={`text-xl font-black mt-1 ${
-                      summary.netProfitPerEuro >= 2
-                        ? 'text-emerald-700'
-                        : summary.netProfitPerEuro > 0 && summary.netProfitPerEuro < 1
-                          ? 'text-rose-600'
-                          : 'text-slate-950'
-                    }`}
-                  >
-                    {summary.netProfitPerEuro > 0 ? `${summary.netProfitPerEuro.toFixed(2)} €` : '—'}
-                  </div>
-                  <div className="text-[10px] text-slate-500 leading-tight mt-1">
-                    Tras margen bruto ({draft.gross_margin_pct}%)
-                  </div>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80">
-                  <div className="text-[10px] font-black uppercase text-slate-500 flex items-center justify-between">
-                    <span>Plazo Recuperación</span>
-                    <Clock className="w-3.5 h-3.5 text-amber-600" />
-                  </div>
-                  <div className="text-xl font-black text-slate-950 mt-1">
-                    {summary.paybackMonths > 0 ? `${summary.paybackMonths.toFixed(1)} meses` : '—'}
-                  </div>
-                  <div className="text-[10px] text-slate-500 leading-tight mt-1">
-                    Tiempo en amortizar captación
-                  </div>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80">
-                  <div className="text-[10px] font-black uppercase text-slate-500">
-                    Tráfico Gratuito
-                  </div>
-                  <div className="text-xl font-black text-[#015b9d] mt-1">
-                    {summary.freeTrafficSharePct.toFixed(1)}%
-                  </div>
-                  <div className="text-[10px] text-slate-500 leading-tight mt-1">
-                    {formatCompact(summary.totalOrganicWebVisits)} de{' '}
-                    {formatCompact(summary.totalAllWebTraffic)} visitas
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* BLOQUE 2: DIAGNÓSTICO DIRECTIVO (3 TARJETAS DE DECISIÓN) */}
+            {/* BLOQUE DIAGNÓSTICO DIRECTIVO (3 TARJETAS DE DECISIÓN AUTOMÁTICAS) */}
             <div className="print-keep grid grid-cols-1 md:grid-cols-3 gap-3.5">
               <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 flex items-start gap-3">
                 <ShieldCheck className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" />
@@ -2138,7 +2530,9 @@ export default function CeoExecutiveCleanReportPage() {
                 <Filter className="w-5 h-5 text-[#ed6723] shrink-0 mt-0.5" />
                 <div>
                   <div className="text-[10px] font-black uppercase text-amber-900">
-                    Conversión Web y Cierre Comercial
+                    {draft.show_financial_section
+                      ? 'Conversión Web y Cierre Comercial'
+                      : 'Captación Web y Consultas'}
                   </div>
                   <div className="text-xs font-black text-amber-950 mt-0.5">
                     {summary.funnelTitle}
@@ -2150,7 +2544,7 @@ export default function CeoExecutiveCleanReportPage() {
               </div>
             </div>
 
-            {/* BLOQUE 3: RESUMEN DE TRACCIÓN GLOBAL (4 TARJETAS LIMPIAS) */}
+            {/* BLOQUE RESUMEN DE TRACCIÓN GLOBAL (4 TARJETAS LIMPIAS) */}
             <div className="print-keep grid grid-cols-2 lg:grid-cols-4 gap-3.5">
               <div className="p-4 rounded-2xl bg-white border border-slate-200 flex items-center justify-between">
                 <div>
@@ -2240,11 +2634,12 @@ export default function CeoExecutiveCleanReportPage() {
               </div>
             </div>
 
-            {/* BLOQUE 4: TABLAS DE RENDIMIENTO (ORGÁNICO Y PAGO) */}
+            {/* BLOQUE TABLAS DE RENDIMIENTO (ORGÁNICO Y PAGO) */}
             <div className="space-y-5">
               <div className="print-keep">
                 <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 mb-2">
-                  2. Rendimiento de Canales Orgánicos ({summary.orgList.length} fuentes activas · Solo tráfico gratuito)
+                  {summary.secOrganic}. Rendimiento de Canales Orgánicos ({summary.orgList.length}{' '}
+                  fuentes activas · Solo tráfico gratuito)
                 </h2>
                 <div className="overflow-x-auto rounded-2xl border border-slate-200">
                   <table className="w-full text-left border-collapse text-xs">
@@ -2323,7 +2718,7 @@ export default function CeoExecutiveCleanReportPage() {
                 <div className="print-keep space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h2 className="text-xs font-black uppercase tracking-wider text-slate-900">
-                      3. Rendimiento de Campañas de Pago por Objetivo (Coste Máx:{' '}
+                      {summary.secPaid}. Rendimiento de Campañas de Pago por Objetivo (Coste Máx:{' '}
                       {draft.target_max_cpa} € · Retorno Meta: {draft.target_min_roas}x)
                     </h2>
                   </div>
@@ -2431,46 +2826,69 @@ export default function CeoExecutiveCleanReportPage() {
                   </div>
 
                   {summary.objectiveGroups.length > 0 && (
-                    <div className="rounded-2xl bg-slate-900 text-white p-4 flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex items-center gap-2 text-xs font-black uppercase text-[#f5b514]">
-                        <DollarSign className="w-4 h-4" />
-                        <span>
-                          Resumen por Objetivo ({formatEur(summary.totalAdSpend)} invertidos
-                          {summary.totalAttributedRevenue > 0
-                            ? ` · ${formatEur(summary.totalAttributedRevenue)} en ventas`
-                            : ''}
-                          ):
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-3">
-                        {summary.objectiveGroups.map((grp) => (
-                          <div
-                            key={grp.objective}
-                            className="px-3.5 py-2 rounded-xl bg-white/10 border border-white/15 text-xs flex items-center gap-3"
-                          >
-                            <div>
-                              <span className="text-[10px] uppercase text-[#f5b514] font-black block">
-                                {grp.objective}
-                              </span>
-                              <span className="font-black">
-                                {formatCompact(grp.totalResults)} {grp.unit}
-                              </span>{' '}
-                              <span className="text-slate-300 text-[11px]">
-                                ({formatEur(grp.totalSpend)})
-                              </span>
-                            </div>
-                            {grp.avgUnitCost > 0 && (
-                              <div className="text-right border-l border-white/20 pl-3">
-                                <span className="text-[9px] uppercase text-slate-400 block">
-                                  Coste Medio
+                    <div className="space-y-2.5">
+                      <div className="rounded-2xl bg-slate-900 text-white p-4 flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 text-xs font-black uppercase text-[#f5b514]">
+                          <DollarSign className="w-4 h-4" />
+                          <span>
+                            Resumen por Objetivo ({formatEur(summary.totalAdSpend)} invertidos
+                            {summary.totalAttributedRevenue > 0
+                              ? ` · ${formatEur(summary.totalAttributedRevenue)} en ventas`
+                              : ''}
+                            ):
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-3">
+                          {summary.objectiveGroups.map((grp) => (
+                            <div
+                              key={grp.objective}
+                              className="px-3.5 py-2 rounded-xl bg-white/10 border border-white/15 text-xs flex items-center gap-3"
+                            >
+                              <div>
+                                <span className="text-[10px] uppercase text-[#f5b514] font-black block">
+                                  {grp.objective}
                                 </span>
-                                <span className="font-black text-emerald-400">
-                                  {grp.avgUnitCost.toFixed(2)} €
+                                <span className="font-black">
+                                  {formatCompact(grp.totalResults)} {grp.unit}
+                                </span>{' '}
+                                <span className="text-slate-300 text-[11px]">
+                                  ({formatEur(grp.totalSpend)})
                                 </span>
                               </div>
-                            )}
-                          </div>
-                        ))}
+                              {grp.avgUnitCost > 0 && (
+                                <div className="text-right border-l border-white/20 pl-3">
+                                  <span className="text-[9px] uppercase text-slate-400 block">
+                                    Coste Medio
+                                  </span>
+                                  <span className="font-black text-emerald-400">
+                                    {grp.avgUnitCost.toFixed(2)} €
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* GUÍA CONCEPTUAL DE OBJETIVOS PARA EL CEO */}
+                      <div className="rounded-2xl bg-sky-50/70 border border-sky-200 p-3.5 space-y-2">
+                        <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-[#015b9d]">
+                          <BookOpen className="w-3.5 h-3.5" />
+                          <span>Cómo Interpretar Cada Objetivo Publicitario (Guía Dirección)</span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 text-[11px]">
+                          {summary.objectiveGroups.map((grp) => (
+                            <div
+                              key={`def-${grp.objective}`}
+                              className="bg-white p-2.5 rounded-xl border border-sky-100"
+                            >
+                              <div className="font-black text-slate-900">{grp.objective}</div>
+                              <p className="text-slate-600 text-[10px] leading-snug mt-0.5">
+                                {grp.definition.ceoExplanation}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -2478,7 +2896,7 @@ export default function CeoExecutiveCleanReportPage() {
               )}
             </div>
 
-            {/* BLOQUE 5: GRÁFICOS VISUALES CLAROS Y MERCADOS */}
+            {/* BLOQUE GRÁFICOS VISUALES CLAROS (ORGÁNICO VS. PAGO) Y MERCADOS */}
             <div className="print-keep grid grid-cols-1 lg:grid-cols-12 gap-4">
               <div className="lg:col-span-7 p-4 rounded-2xl border border-slate-200 bg-slate-50/60 flex flex-col justify-between gap-4">
                 <div className="space-y-2.5">
@@ -2486,128 +2904,61 @@ export default function CeoExecutiveCleanReportPage() {
                     <div className="flex items-center gap-2">
                       <BarChart3 className="w-4 h-4 text-[#015b9d]" />
                       <h3 className="text-xs font-black uppercase text-slate-900">
-                        4. Aporte de Visitas Web Orgánicas e Interés por Canal
+                        {summary.secTrafficChart}. Entrada de Tráfico Web por Canal (Orgánico vs.
+                        Pago)
                       </h3>
                     </div>
                     <span className="text-[10px] font-semibold text-slate-500">
-                      % de visitas sobre visualizaciones
+                      Total: {formatCompact(summary.totalAllWebTraffic)} visitas
                     </span>
                   </div>
 
                   <div className="space-y-2">
-                    {summary.enrichedOrgList.map((net) => {
-                      const highClickRate = net.clickRatePct >= 3.5;
-                      return (
-                        <div
-                          key={net.id}
-                          className="bg-white p-3 rounded-xl border border-slate-200/80 space-y-1.5"
-                        >
-                          <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className="w-2.5 h-2.5 rounded-full shrink-0"
-                                style={{ backgroundColor: net.color }}
-                              />
-                              <span className="font-black text-slate-900">{net.name}</span>
-                              {net.organic_reach > 0 && (
-                                <span
-                                  className={`px-2 py-0.5 rounded-full text-[9px] font-black ${
-                                    highClickRate
-                                      ? 'bg-emerald-100 text-emerald-800'
-                                      : 'bg-slate-100 text-slate-600'
-                                  }`}
-                                >
-                                  Interés: {net.clickRatePct.toFixed(2)}%
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-right">
-                              <strong className="text-slate-950 font-black">
-                                {formatCompact(net.web_visits)} visitas
-                              </strong>{' '}
-                              <span className="text-slate-400 font-bold">
-                                ({net.webSharePct.toFixed(1)}%)
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div
-                              className="h-full rounded-full transition-all"
-                              style={{
-                                width: `${Math.max(net.webSharePct, net.web_visits > 0 ? 4 : 0)}%`,
-                                backgroundColor: net.color,
-                              }}
+                    {summary.unifiedTrafficSources.map((src) => (
+                      <div
+                        key={src.id}
+                        className="bg-white p-3 rounded-xl border border-slate-200/80 space-y-1.5"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="w-2.5 h-2.5 rounded-full shrink-0"
+                              style={{ backgroundColor: src.color }}
                             />
+                            <span className="font-black text-slate-900">{src.name}</span>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[9px] font-black ${
+                                src.type === 'ORGÁNICO'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : 'bg-sky-100 text-[#015b9d]'
+                              }`}
+                            >
+                              {src.type === 'ORGÁNICO' ? 'GRATIS · ORGÁNICO' : 'PAGO · ANUNCIOS'}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <strong className="text-slate-950 font-black">
+                              {formatCompact(src.visits)} visitas
+                            </strong>{' '}
+                            <span className="text-slate-400 font-bold">
+                              ({src.sharePct.toFixed(1)}%)
+                            </span>
                           </div>
                         </div>
-                      );
-                    })}
+
+                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{
+                              width: `${Math.max(src.sharePct, src.visits > 0 ? 3 : 0)}%`,
+                              backgroundColor: src.color,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-
-                {draft.show_paid_section &&
-                  summary.activeSpendCampaigns.some((c) => c.revenue > 0) && (
-                    <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-black uppercase text-slate-900">
-                          Comparativa Económica: Gasto en Anuncios vs. Ventas Generadas
-                        </span>
-                        <div className="flex items-center gap-3 text-[10px] font-bold">
-                          <span className="inline-flex items-center gap-1">
-                            <span className="w-2.5 h-2.5 rounded-xs bg-rose-500" /> Gasto
-                          </span>
-                          <span className="inline-flex items-center gap-1">
-                            <span className="w-2.5 h-2.5 rounded-xs bg-emerald-500" /> Ventas (€)
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        {summary.activeSpendCampaigns.map((camp) => {
-                          const spendPct = Math.max(
-                            3,
-                            Math.round((camp.ad_spend / summary.maxFinancialBar) * 100)
-                          );
-                          const revPct = Math.round(
-                            (camp.revenue / summary.maxFinancialBar) * 100
-                          );
-                          return (
-                            <div key={camp.id} className="space-y-1">
-                              <div className="flex justify-between text-[10px]">
-                                <span className="font-bold text-slate-800">
-                                  {camp.platform} ({camp.campaign_label})
-                                </span>
-                                <span>
-                                  <span className="text-rose-600 font-bold">
-                                    -{formatEur(camp.ad_spend)}
-                                  </span>{' '}
-                                  →{' '}
-                                  <strong className="text-emerald-700">
-                                    +{formatEur(camp.revenue)}
-                                  </strong>
-                                </span>
-                              </div>
-                              <div className="space-y-0.5">
-                                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                  <div
-                                    className="bg-rose-500 h-full rounded-full"
-                                    style={{ width: `${spendPct}%` }}
-                                  />
-                                </div>
-                                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                  <div
-                                    className="bg-emerald-500 h-full rounded-full"
-                                    style={{ width: `${revPct}%` }}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
               </div>
 
               <div className="lg:col-span-5 p-4 rounded-2xl border border-slate-200 bg-slate-50/60 flex flex-col justify-between gap-3">
@@ -2615,7 +2966,7 @@ export default function CeoExecutiveCleanReportPage() {
                   <div className="flex items-center gap-1.5 mb-2">
                     <Globe className="w-4 h-4 text-[#015b9d]" />
                     <h3 className="text-xs font-black uppercase text-slate-900">
-                      5. Origen del Tráfico Orgánico y Sedes
+                      {summary.secBalanceChart}. Balance Gratuito vs. Pago y Mercados
                     </h3>
                   </div>
 
@@ -2638,10 +2989,10 @@ export default function CeoExecutiveCleanReportPage() {
                       </svg>
                       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                         <span className="text-xs font-black text-slate-950 leading-none">
-                          {formatCompact(summary.totalOrganicWebVisits)}
+                          {formatCompact(summary.totalAllWebTraffic)}
                         </span>
                         <span className="text-[8px] font-bold uppercase text-slate-400 mt-0.5">
-                          Orgánicas
+                          Visitas
                         </span>
                       </div>
                     </div>
@@ -2654,7 +3005,9 @@ export default function CeoExecutiveCleanReportPage() {
                               className="w-2.5 h-2.5 rounded-full shrink-0"
                               style={{ backgroundColor: seg.color }}
                             />
-                            <span>{seg.name}</span>
+                            <span>
+                              {seg.name} ({formatCompact(seg.visits)})
+                            </span>
                           </span>
                           <span className="font-black text-slate-950 shrink-0">
                             {seg.pct.toFixed(1)}%
@@ -2717,13 +3070,13 @@ export default function CeoExecutiveCleanReportPage() {
               </div>
             </div>
 
-            {/* BLOQUE 6: PLAN DE ACCIÓN RECOMENDADO */}
+            {/* BLOQUE PLAN DE ACCIÓN RECOMENDADO */}
             <div className="print-keep rounded-2xl bg-amber-50/80 border-2 border-[#f5b514] p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Compass className="w-4 h-4 text-[#ed6723]" />
                   <h3 className="text-xs font-black uppercase tracking-wider text-slate-950">
-                    6. Plan de Acción Recomendado para el Próximo Mes
+                    {summary.secActionPlan}. Plan de Acción Recomendado para el Próximo Mes
                   </h3>
                 </div>
                 <span className="text-[10px] font-black uppercase text-amber-900">
